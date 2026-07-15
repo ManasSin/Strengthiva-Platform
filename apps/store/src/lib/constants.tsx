@@ -33,6 +33,10 @@ export const paymentInfoMap: Record<
     title: "Manual Payment",
     icon: <CreditCard />,
   },
+  pp_razorpay_razorpay: {
+    title: "Razorpay (Cards, UPI, Netbanking)",
+    icon: <CreditCard />,
+  },
   // Add more payment providers here
 }
 
@@ -48,6 +52,13 @@ export const isPaypal = (providerId?: string) => {
 }
 export const isManual = (providerId?: string) => {
   return providerId?.startsWith("pp_system_default")
+}
+// See docs/platform-architecture/tech-specs/medusa/payments-razorpay.md — custom
+// AbstractPaymentProvider, identifier "razorpay", so Medusa stores it as
+// pp_razorpay_{id} where id is whatever's configured in medusa-config.ts (we
+// used "razorpay" as the id too, hence pp_razorpay_razorpay).
+export const isRazorpay = (providerId?: string) => {
+  return providerId?.startsWith("pp_razorpay_")
 }
 
 // Add currencies that don't need to be divided by 100
