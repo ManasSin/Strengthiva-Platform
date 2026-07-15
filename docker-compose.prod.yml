@@ -1,0 +1,101 @@
+# Production compose for the strengthiva-platform monorepo (Medusa + the two Next.js
+# apps). Standalone prod file, not an override: `docker compose -f docker-compose.prod.yml up -d`.
+#
+# Differences from docker-compose.yml (local dev):
+#   - No `medusa-db` service. Postgres is an external managed instance in production
+#     (DigitalOcean Managed Postgres, separate instance from FastAPI's — see
+#     docs/platform-architecture/02-decisions-log.md) — DATABASE_URL in apps/medusa's
+#     .env points at it directly, with sslmode=require.
+#   - `medusa-redis` stays local (a VPS container), per 06-deployment-topology.md —
+#     it's addressed via REDIS_URL/RATE_LIMIT_REDIS_URL, not hardcoded, so it's
+#     portable to a managed Redis later without being blocking now.
+#   - apps/app and apps/store's NEXT_PUBLIC_* build args must be set in the shell
+#     environment (or a root .env docker compose auto-loads for variable
+#     substitution) BEFORE running `docker compose -f docker-compose.prod.yml build`
+#     — see .env.production.example. Next.js inlines these into the client bundle at
+#     build time; setting them only as container `environment:` at runtime does
+#     nothing.
+#   - Joins the shared external Docker network (`strengthiva_public`, created once by
+#     the Caddy compose in the sibling top-level `deploy/` directory) so Caddy can
+#     reach `medusa`/`app`/`store` by service name, and so `medusa` and `api`
+#     (strengthiva-backend's FastAPI, a separate compose project) can reach each
+#     other for the Cart Bridge / SSO / order-webhook calls.
+services:
+  medusa:
+    build:
+      context: .
+      dockerfile: apps/medusa/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MEDUSA_PORT:-9000}:9000"
+    env_file:
+      - apps/medusa/.env
+    depends_on:
+      medusa-redis:
+        condition: service_started
+    networks:
+      - default
+      - strengthiva_public
+
+  medusa-redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MEDUSA_REDIS_PORT:-6379}:6379"
+    volumes:
+      - medusa_redis_data:/data
+    networks:
+      - default
+      - strengthiva_public
+
+  app:
+    build:
+      context: .
+      dockerfile: apps/app/Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    env_file:
+      - apps/app/.env.local
+    networks:
+      - strengthiva_public
+
+  # Build this AFTER medusa and Caddy are already up — verified directly that
+  # `next build` fails outright otherwise (ECONNREFUSED collecting page data for
+  # the categories/collections routes). NEXT_PUBLIC_MEDUSA_BACKEND_URL must be the
+  # real public https://medusa-store.strengthiva.com, not medusa:9000 — the same
+  # build-time SSG fetch needs it reachable from inside the build, and the exact
+  # same value gets inlined into the client bundle for the browser, which can't
+  # resolve Docker-internal hostnames. See deploy/README.md's full deploy order.
+  store:
+    build:
+      context: .
+      dockerfile: apps/store/Dockerfile
+      args:
+        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL}
+        NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION}
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID}
+        NEXT_PUBLIC_STRIPE_KEY: ${NEXT_PUBLIC_STRIPE_KEY}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${STORE_PORT:-3001}:3001"
+    env_file:
+      - apps/store/.env.local
+    depends_on:
+      - medusa
+    networks:
+      - strengthiva_public
+
+volumes:
+  medusa_redis_data:
+
+networks:
+  strengthiva_public:
+    name: ${DOCKER_NETWORK:-strengthiva_public}
+    external: true

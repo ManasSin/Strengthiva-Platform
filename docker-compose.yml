@@ -1,0 +1,35 @@
+services:
+  # Medusa's own local-dev database — deliberately separate from the FastAPI repo's
+  # Postgres (strengthiva-backend/docker-compose.yml), matching the "two fully
+  # separate databases" decision in docs/platform-architecture/02-decisions-log.md.
+  # In production both are DigitalOcean Managed Postgres instances instead; this is
+  # just the local dev equivalent.
+  medusa-db:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${MEDUSA_DB_USER:-medusa}
+      POSTGRES_PASSWORD: ${MEDUSA_DB_PASSWORD:-medusa}
+      POSTGRES_DB: ${MEDUSA_DB_NAME:-medusa}
+    ports:
+      - "127.0.0.1:${MEDUSA_DB_PORT:-5433}:5432"
+    volumes:
+      - medusa_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MEDUSA_DB_USER:-medusa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Medusa v2 uses Redis for its event bus / workflow engine.
+  medusa-redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MEDUSA_REDIS_PORT:-6379}:6379"
+    volumes:
+      - medusa_redis_data:/data
+
+volumes:
+  medusa_postgres_data:
+  medusa_redis_data:
