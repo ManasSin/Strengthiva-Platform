@@ -6,9 +6,9 @@ import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 
 export const metadata: Metadata = {
-  title: "Medusa Next.js Starter Template",
+  title: "Strengthiva Store — Modern Ayurvedic Essentials",
   description:
-    "A performant frontend ecommerce starter template with Next.js 15 and Medusa.",
+    "Ayurvedic supplements and wellness products, recommended for your unique constitution.",
 }
 
 export default async function Home(props: {

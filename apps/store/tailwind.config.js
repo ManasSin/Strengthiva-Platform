@@ -33,6 +33,12 @@ module.exports = {
           80: "#1F2937",
           90: "#111827",
         },
+        // Same tokens as app.strengthiva.com (docs/platform-architecture/
+        // tech-specs/store-frontend/integration-notes.md's "Design tokens" section).
+        primary: "#0C6B36",
+        secondary: "#FE6B01",
+        tertiary: "#F4EBD0",
+        brandneutral: "#1A1C1A",
       },
       borderRadius: {
         none: "0px",
@@ -59,13 +65,20 @@ module.exports = {
       },
       fontFamily: {
         sans: [
-          "Inter",
+          "var(--font-plus-jakarta-sans)",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
           "Roboto",
           "Helvetica Neue",
           "Ubuntu",
+          "sans-serif",
+        ],
+        headline: [
+          "var(--font-manrope)",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
           "sans-serif",
         ],
       },
