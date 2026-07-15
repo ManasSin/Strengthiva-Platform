@@ -1,25 +1,33 @@
-"use client"
+import { Heading, Text, Button } from "@modules/common/components/ui"
 
-import { useState } from "react"
-
-import Register from "@modules/account/components/register"
-import Login from "@modules/account/components/login"
-
-export enum LOGIN_VIEW {
-  SIGN_IN = "sign-in",
-  REGISTER = "register",
-}
-
+// One shared Strengthiva account across app. and store. (decided
+// docs/platform-architecture/02-decisions-log.md) — store. no longer owns its
+// own email/password login (that was Medusa's stock emailpass provider, never
+// actually wired to Better Auth). Signing in happens on app., which — after a
+// successful sign-in/sign-up — mints a short-lived SSO handoff code and lands
+// the browser back here already authenticated, via app/api/auth-handoff/route.ts.
+// See docs/platform-architecture/tech-specs/store-frontend/integration-notes.md's
+// "Login/register: Medusa-default → SSO-aware" note (this is the "redirect"
+// option that note left undecided).
 const LoginTemplate = () => {
-  const [currentView, setCurrentView] = useState("sign-in")
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3001"
+  const continueUrl = `${appUrl}/login?redirect=${encodeURIComponent(`${baseUrl}/account`)}`
 
   return (
-    <div className="w-full flex justify-start px-8 py-8">
-      {currentView === "sign-in" ? (
-        <Login setCurrentView={setCurrentView} />
-      ) : (
-        <Register setCurrentView={setCurrentView} />
-      )}
+    <div className="w-full flex justify-center px-8 py-16">
+      <div className="max-w-sm w-full flex flex-col items-center text-center">
+        <Heading level="h1" className="txt-large-plus">
+          One account, everywhere
+        </Heading>
+        <Text className="mt-2 text-grey-60">
+          Your Strengthiva account works across the assessment app and the store.
+          Sign in once on app.strengthiva.com.
+        </Text>
+        <a href={continueUrl} className="w-full mt-8">
+          <Button className="w-full">Continue with your Strengthiva account</Button>
+        </a>
+      </div>
     </div>
   )
 }
