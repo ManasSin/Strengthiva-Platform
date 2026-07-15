@@ -1,0 +1,166 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
+import { MarketingNav } from "@/components/layout/nav";
+import { MarketingFooter } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
+import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
+
+// Output / Report page — ported from the Figma "Output pages" export, reviewed
+// in docs/platform-architecture/modules/app-frontend.md §5. Diet is single-day
+// (decided 2026-07-14 — not the Figma mockup's "7-Day Plan"/PDF export framing).
+// Products are re-resolved live by FastAPI on every fetch (never cached) —
+// see tech-specs/backend/product-resolution-service.md — so "in stock" here can
+// genuinely differ between two page loads of the same report.
+export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [report, setReport] = useState<ReportResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .getReport(id)
+      .then(setReport)
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+          return;
+        }
+        setError("We couldn't load this report.");
+      });
+  }, [id]);
+
+  if (error) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-6 py-24 text-center text-red-700">
+        {error}
+      </main>
+    );
+  }
+
+  if (!report) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-6 py-24">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+      </main>
+    );
+  }
+
+  return (
+    <>
+      <MarketingNav />
+      <main className="flex-1">
+        <div className="mx-auto max-w-4xl px-6 py-12">
+          <h1 className="text-center font-headline text-3xl font-bold text-foreground">
+            Your Path to Vitality is Ready!
+          </h1>
+          <p className="mt-2 text-center text-muted-foreground">
+            We&apos;ve analyzed your profile. Here is your balanced blueprint for peak performance.
+          </p>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 text-white">
+              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
+                Ayurvedic Constitution
+              </span>
+              <h2 className="mt-4 font-headline text-2xl font-bold">{report.dosha}</h2>
+            </div>
+            <div className="rounded-2xl border border-border bg-white p-6">
+              <h3 className="text-sm font-semibold text-foreground">Summary</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{report.summary}</p>
+            </div>
+          </div>
+
+          <section className="mt-10 rounded-2xl border border-border bg-white p-6">
+            <h2 className="font-headline text-lg font-bold text-foreground">Daily Diet Plan</h2>
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{report.diet}</p>
+          </section>
+
+          <section className="mt-10">
+            <h2 className="font-headline text-lg font-bold text-foreground">
+              <span className="text-secondary">Therapeutic</span> Recommendations
+            </h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {report.products.map((product, i) => (
+                <ProductCard key={`${product.name}-${i}`} product={product} />
+              ))}
+              {report.products.length === 0 && (
+                <p className="text-sm italic text-muted-foreground">No product recommendations for this report.</p>
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
+      <MarketingFooter />
+    </>
+  );
+}
+
+function ProductCard({ product }: { product: ResolvedProduct }) {
+  const [adding, setAdding] = useState(false);
+
+  async function handleAddToCart(variantId: string) {
+    setAdding(true);
+    try {
+      const { store_cart_url } = await api.addToCart(variantId);
+      window.open(store_cart_url, "_blank");
+    } catch {
+      // Cart Bridge failure — leave the button re-enabled so the user can retry,
+      // per app/routers/cart.py's 502 on MedusaClientError.
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  return (
+    <div className="relative rounded-xl border border-border bg-white p-5">
+      <StatusBadge resolution={product.resolution} />
+      <h3 className="pr-24 text-sm font-bold text-foreground">{product.name}</h3>
+      {product.purpose && <p className="mt-1 text-sm text-muted-foreground">{product.purpose}</p>}
+      {product.conditions && product.conditions.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {product.conditions.map((c) => (
+            <span key={c} className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+      {product.complement && (
+        <p className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">↗ {product.complement}</p>
+      )}
+
+      {product.resolution.status === "resolved" && (
+        <div className="mt-4 flex items-center justify-between">
+          <span className="font-semibold text-foreground">
+            {product.resolution.price !== null
+              ? `${product.resolution.currency_code?.toUpperCase()} ${product.resolution.price}`
+              : "Price unavailable"}
+          </span>
+          <Button
+            variant="secondary"
+            className="px-4 py-2 text-xs"
+            disabled={adding}
+            onClick={() => handleAddToCart(product.resolution.status === "resolved" ? product.resolution.medusa_variant_id : "")}
+          >
+            {adding ? "Adding…" : "+ Add to Cart"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({ resolution }: { resolution: ResolvedProduct["resolution"] }) {
+  const map = {
+    resolved: { label: "In Stock", className: "bg-green-100 text-green-800" },
+    out_of_stock: { label: "Temporarily Unavailable", className: "bg-yellow-100 text-yellow-800" },
+    unmapped: { label: "Coming Soon", className: "bg-gray-100 text-gray-600" },
+  } as const;
+  const { label, className } = map[resolution.status];
+  return (
+    <span className={`absolute right-4 top-4 rounded px-2 py-0.5 text-[10px] font-semibold ${className}`}>
+      {label}
+    </span>
+  );
+}
