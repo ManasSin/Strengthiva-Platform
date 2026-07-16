@@ -1,8 +1,11 @@
 // Thin client for calling strengthiva-backend (FastAPI). All calls include
 // credentials so the Better Auth session cookie is sent — FastAPI's
-// get_current_user reads it directly (see app/dependencies/auth.py).
+// get_current_user reads it directly (see app/dependencies/auth.py). The same
+// cookie now also carries real admin identity (role="admin") for /admin's
+// pages — see docs/platform-architecture/tech-specs/backend/
+// admin-authentication.md — no separate admin-key header needed here.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 class ApiError extends Error {
   status: number;
@@ -153,6 +156,73 @@ export const api = {
     request<{ store_login_url: string }>("/api/v1/auth/store-login-handoff", {
       method: "POST",
     }),
+
+  // ── Admin: Knowledge Base indexing (/admin/knowledge-base) ──────────────
+  indexStatus: () => request<Record<string, unknown>>("/api/v1/test/index/status"),
+
+  indexDocuments: (docType: "diet_chart" | "product_recommendation") =>
+    request<{ doc_type: string; documents: IndexedDocument[] }>(
+      `/api/v1/test/index/documents?doc_type=${docType}`
+    ),
+
+  indexFile: (file: File, docType: "diet_chart" | "product_recommendation") => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("doc_type", docType);
+    return request<Record<string, unknown>>("/api/v1/test/index", {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  // ── Admin: Batch Certificates (/admin/batch-certificates) ────────────────
+  createBatch: (batchNumber: string, productName: string | null) =>
+    request<AdminBatch>("/api/v1/admin/batches", {
+      method: "POST",
+      body: JSON.stringify({ batch_number: batchNumber, product_name: productName }),
+    }),
+
+  listBatches: () => request<AdminBatch[]>("/api/v1/admin/batches"),
+
+  uploadCertificate: (batchId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<AdminCertificate>(`/api/v1/admin/batches/${batchId}/certificates`, {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  vetCertificate: (batchId: string, certificateId: string, vettedBy: string) =>
+    request<AdminCertificate>(
+      `/api/v1/admin/batches/${batchId}/certificates/${certificateId}/vet`,
+      { method: "POST", body: JSON.stringify({ vetted_by: vettedBy }) }
+    ),
+};
+
+export type IndexedDocument = {
+  document_id: string;
+  filename: string;
+  chunk_count: number;
+};
+
+export type AdminCertificate = {
+  id: string;
+  original_filename: string;
+  status: string;
+  vetted_by: string | null;
+  vetted_at: string | null;
+  created_at: string;
+};
+
+export type AdminBatch = {
+  id: string;
+  batch_number: string;
+  product_name: string | null;
+  medusa_product_id: string | null;
+  verify_url: string;
+  certificates: AdminCertificate[];
+  created_at: string;
 };
 
 export { ApiError };

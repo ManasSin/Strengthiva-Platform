@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { admin } from "better-auth/plugins/admin";
 import { Pool } from "pg";
 import { sendVerificationEmail } from "./email";
 
@@ -37,4 +38,11 @@ export const auth = betterAuth({
         ? { enabled: true, domain: ".strengthiva.com" }
         : undefined,
   },
+  // Adds a `role` column to the user table (via Better Auth's own migration
+  // tooling, not FastAPI's Alembic — see the file-level comment above). Backs
+  // the real per-account admin authentication for /admin — see
+  // docs/platform-architecture/tech-specs/backend/admin-authentication.md.
+  // No sign-up flow ever sets role="admin" — bootstrap is a direct SQL UPDATE,
+  // see that doc.
+  plugins: [admin()],
 });
