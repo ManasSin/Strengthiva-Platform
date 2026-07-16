@@ -137,7 +137,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // /verify/* is excluded the same way /api/* already is: it's the batch-certificate
+  // QR-scan landing page (docs/platform-architecture/tech-specs/backend/
+  // batch-certificates.md), printed on physical bottle labels — the URL must never
+  // depend on region-detection/redirect logic, since a reprint isn't an option once
+  // a batch ships. See src/app/verify/[id]/page.tsx.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp).*)",
+    "/((?!api|verify|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp).*)",
   ],
 }
