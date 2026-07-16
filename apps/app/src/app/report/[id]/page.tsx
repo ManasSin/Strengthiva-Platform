@@ -4,6 +4,8 @@ import { use, useEffect, useState } from "react";
 import { MarketingNav } from "@/components/layout/nav";
 import { MarketingFooter } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
+import { doshaIcon, parseDoshaHero } from "@/lib/dosha";
 import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
 
 // Output / Report page — ported from the Figma "Output pages" export, reviewed
@@ -16,6 +18,27 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params);
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownloadPdf() {
+    if (!report) return;
+    setDownloading(true);
+    try {
+      const [{ pdf }, { ReportDocument }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/lib/report-pdf"),
+      ]);
+      const blob = await pdf(<ReportDocument report={report} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "strengthiva-report.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   useEffect(() => {
     api
@@ -58,22 +81,53 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             We&apos;ve analyzed your profile. Here is your balanced blueprint for peak performance.
           </p>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 text-white">
-              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
-                Ayurvedic Constitution
-              </span>
-              <h2 className="mt-4 font-headline text-2xl font-bold">{report.dosha}</h2>
-            </div>
-            <div className="rounded-2xl border border-border bg-white p-6">
-              <h3 className="text-sm font-semibold text-foreground">Summary</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{report.summary}</p>
-            </div>
+          <div className="mt-6 flex justify-center">
+            <Button variant="secondary" size="lg" onClick={handleDownloadPdf} disabled={downloading}>
+              {downloading ? "Preparing PDF…" : "Download PDF Report"}
+            </Button>
           </div>
+
+          {(() => {
+            const hero = parseDoshaHero(report.dosha);
+            return (
+              <div className="mt-10 grid gap-6 md:grid-cols-2">
+                <div className="rounded-3xl bg-gradient-to-br from-primary to-primary/80 p-8 text-white">
+                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
+                    Primary Constitution
+                  </span>
+                  <h2 className="mt-4 font-headline text-2xl font-bold">Your Dosha: {hero.name}</h2>
+                  <p className="mt-3 text-sm leading-relaxed text-white/90">{hero.blurb}</p>
+                  {hero.components.length > 0 && (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {hero.components.map((c) => (
+                        <span
+                          key={c}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium"
+                        >
+                          <span aria-hidden>{doshaIcon(c)}</span> {c}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-3xl border border-border bg-white p-8">
+                  <h3 className="text-sm font-semibold text-foreground">Summary</h3>
+                  <Markdown className="mt-3 text-muted-foreground">{report.summary}</Markdown>
+                </div>
+              </div>
+            );
+          })()}
+
+          <section className="mt-10 rounded-2xl border border-border bg-white p-8">
+            <h2 className="font-headline text-lg font-bold text-foreground">
+              Your Ayurvedic Constitution — Full Analysis
+            </h2>
+            <Markdown className="mt-4 text-foreground">{report.dosha}</Markdown>
+          </section>
 
           <section className="mt-10 rounded-2xl border border-border bg-white p-6">
             <h2 className="font-headline text-lg font-bold text-foreground">Daily Diet Plan</h2>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{report.diet}</p>
+            <Markdown className="mt-4 text-foreground">{report.diet}</Markdown>
           </section>
 
           <section className="mt-10">

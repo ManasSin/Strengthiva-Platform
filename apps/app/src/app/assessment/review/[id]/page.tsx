@@ -156,10 +156,10 @@ export default function ReviewExtractionPage({ params }: { params: Promise<{ id:
           )}
 
           <div className="mt-8 flex items-center justify-between">
-            <Button type="button" variant="outline" onClick={() => router.push("/assessment/upload")}>
+            <Button type="button" variant="outline" size="lg" onClick={() => router.push("/assessment/upload")}>
               ← Retake Photo
             </Button>
-            <Button type="button" variant="default" disabled={saving} onClick={handleContinue}>
+            <Button type="button" variant="default" size="lg" disabled={saving} onClick={handleContinue}>
               {saving ? "Saving…" : "Continue to Final Assessment Steps →"}
             </Button>
           </div>

@@ -66,6 +66,11 @@ export type PrescriptionResponse = {
   duration: string | null;
   focus: string | null;
   prescribed_items: string[];
+  patient_name: string | null;
+  age: number | null;
+  gender: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
   resolved_items: ResolvedItem[];
   created_at: string;
   updated_at: string;
@@ -76,6 +81,11 @@ export type PrescriptionUpdate = {
   duration?: string | null;
   focus?: string | null;
   prescribed_items?: string[];
+  patient_name?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
 };
 
 export type ResolvedProduct = {

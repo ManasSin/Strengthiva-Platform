@@ -77,7 +77,7 @@ export function AssessmentWizard({
         <span aria-hidden>{step.icon}</span> {step.title}
       </h1>
 
-      <div className="rounded-2xl border border-border bg-white p-6">
+      <div className="rounded-2xl border border-border bg-white p-8">
         {visibleFields.map((field) => (
           <div key={field.id}>
             {/* BMI is a composite (height-cm + weight-kg) field not representable
@@ -96,6 +96,7 @@ export function AssessmentWizard({
         <Button
           type="button"
           variant="outline"
+          size="lg"
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
           disabled={clampedIndex === 0}
         >
@@ -104,6 +105,7 @@ export function AssessmentWizard({
         <Button
           type="button"
           variant={isLastStep ? "secondary" : "default"}
+          size="lg"
           disabled={!isStepValid}
           onClick={() => {
             if (isLastStep) {

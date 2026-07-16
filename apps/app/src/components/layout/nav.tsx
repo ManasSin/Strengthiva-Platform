@@ -24,7 +24,7 @@ export function MarketingNav() {
             Diet Plans
           </Link>
         </nav>
-        <ButtonLink href="/assessment" variant="default" className="text-sm">
+        <ButtonLink href="/assessment" variant="default" size={"lg"} className="text-sm">
           Start Assessment
         </ButtonLink>
       </div>

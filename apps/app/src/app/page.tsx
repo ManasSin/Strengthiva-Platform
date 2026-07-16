@@ -39,10 +39,10 @@ function HeroSection() {
             tradition.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <ButtonLink href="/assessment" variant="secondary">
+            <ButtonLink href="/assessment" variant="secondary" size="lg">
               Start Your Free Assessment →
             </ButtonLink>
-            <ButtonLink href="/sample-plan" variant="outline">
+            <ButtonLink href="/sample-plan" variant="outline" size="lg">
               View Sample Plan
             </ButtonLink>
           </div>
@@ -190,7 +190,7 @@ function ClosingCtaSection() {
           Take our 3-minute Dosha assessment and receive a personalized wellness plan
           designed for your unique physiology.
         </p>
-        <ButtonLink href="/assessment" variant="secondary" className="mt-8">
+        <ButtonLink href="/assessment" variant="secondary" size="lg" className="mt-8">
           Start Your Free Assessment
         </ButtonLink>
         <p className="mt-3 text-xs text-white/70">No credit card required. BAMS doctor reviewed.</p>

@@ -18,12 +18,12 @@ export function FieldRenderer({
   const gridCols = field.columns === 3 ? "grid-cols-3" : "grid-cols-2";
 
   return (
-    <div className="mb-6">
-      <label className="mb-1.5 block text-sm font-medium text-foreground">
+    <div className="mb-8">
+      <label className="mb-2 block text-base font-medium text-foreground">
         {field.label}
         {field.required && <span className="ml-1 text-secondary">*</span>}
       </label>
-      {field.sublabel && <p className="mb-2 text-xs text-muted-foreground">{field.sublabel}</p>}
+      {field.sublabel && <p className="mb-2.5 text-sm text-muted-foreground">{field.sublabel}</p>}
 
       {field.type === "text" && (
         <input
@@ -31,7 +31,7 @@ export function FieldRenderer({
           value={(value as string) || ""}
           placeholder={field.placeholder}
           onChange={(e) => onChange(field.id, e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
         />
       )}
 
@@ -43,7 +43,7 @@ export function FieldRenderer({
           min={field.min}
           max={field.max}
           onChange={(e) => onChange(field.id, e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
         />
       )}
 
@@ -53,7 +53,7 @@ export function FieldRenderer({
           placeholder={field.placeholder}
           rows={3}
           onChange={(e) => onChange(field.id, e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
         />
       )}
 
@@ -61,7 +61,7 @@ export function FieldRenderer({
         <select
           value={(value as string) || ""}
           onChange={(e) => onChange(field.id, e.target.value)}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
         >
           <option value="">Select…</option>
           {field.options?.map((opt) => (

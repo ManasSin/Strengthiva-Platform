@@ -13,7 +13,7 @@ export function OptionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
+      className={`rounded-xl border-2 px-5 py-3.5 text-left text-base transition-colors ${
         selected
           ? "border-primary bg-primary/5 font-medium text-primary"
           : "border-border bg-white text-foreground hover:border-primary/40"

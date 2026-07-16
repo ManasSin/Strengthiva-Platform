@@ -99,7 +99,7 @@ export default function SamplePlanPage() {
             <p className="mx-auto mt-3 max-w-xl text-white/90">
               Take the real assessment — it takes about 5 minutes.
             </p>
-            <ButtonLink href="/assessment" variant="secondary" className="mt-6">
+            <ButtonLink href="/assessment" variant="secondary" size="lg" className="mt-6">
               Start Your Free Assessment
             </ButtonLink>
           </div>

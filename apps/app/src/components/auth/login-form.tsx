@@ -136,6 +136,7 @@ export function LoginForm() {
         <Button
           type="button"
           variant="outline"
+          size="lg"
           className="mt-6 w-full"
           disabled={resendStatus === "sending"}
           onClick={handleResend}
@@ -196,7 +197,7 @@ export function LoginForm() {
           className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <Button type="submit" variant="default" className="w-full" disabled={loading}>
+        <Button type="submit" variant="default" size="lg" className="w-full" disabled={loading}>
           {loading ? "Please wait…" : mode === "sign-up" ? "Create Account" : "Sign In"}
         </Button>
       </form>

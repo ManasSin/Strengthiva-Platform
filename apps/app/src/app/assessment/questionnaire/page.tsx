@@ -41,6 +41,11 @@ function QuestionnaireContent() {
           ...(prescription.symptoms.length > 0
             ? { "common-illnesses": "Yes, but manageable", "illness-detail": illnessParts.join(" — ") }
             : {}),
+          ...(prescription.patient_name ? { name: prescription.patient_name } : {}),
+          ...(prescription.age !== null ? { age: String(prescription.age) } : {}),
+          ...(prescription.gender ? { gender: prescription.gender } : {}),
+          ...(prescription.height_cm !== null ? { "height-cm": String(prescription.height_cm) } : {}),
+          ...(prescription.weight_kg !== null ? { "weight-kg": String(prescription.weight_kg) } : {}),
         });
         setShowStreamliningBanner(true);
       })
@@ -71,7 +76,7 @@ function QuestionnaireContent() {
     return (
       <>
         <MarketingNav />
-        <main className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+        <main className="flex flex-1 flex-col items-center justify-center bg-leaf-motif px-6 py-24 text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
           <h1 className="mt-6 font-headline text-xl font-bold text-foreground">Analyzing…</h1>
           <p className="mt-2 text-sm text-muted-foreground">Determining your Ayurvedic constitution</p>
@@ -84,7 +89,7 @@ function QuestionnaireContent() {
     return (
       <>
         <MarketingNav />
-        <main className="flex flex-1 items-center justify-center px-6 py-24">
+        <main className="flex flex-1 items-center justify-center bg-leaf-motif px-6 py-24">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
         </main>
       </>
@@ -94,7 +99,7 @@ function QuestionnaireContent() {
   return (
     <>
       <MarketingNav />
-      <main className="flex-1">
+      <main className="flex-1 bg-leaf-motif">
         {error && (
           <div className="mx-auto mt-6 max-w-2xl rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}

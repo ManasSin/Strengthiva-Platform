@@ -45,7 +45,7 @@ export default function PrescriptionUploadPage() {
   return (
     <>
       <MarketingNav />
-      <main className="flex-1 bg-gradient-to-b from-primary/5 to-background">
+      <main className="flex-1 bg-leaf-motif">
         <div className="mx-auto max-w-2xl px-6 py-16">
           <h1 className="text-center font-headline text-3xl font-bold text-foreground">
             Upload Your Prescription
@@ -106,6 +106,7 @@ export default function PrescriptionUploadPage() {
             <Button
               type="button"
               variant="outline"
+              size="lg"
               onClick={() => router.push("/assessment/questionnaire")}
             >
               Skip — take the health assessment instead

@@ -10,7 +10,7 @@ export default function ChooseAssessmentMethod() {
   return (
     <>
       <MarketingNav />
-      <main className="flex-1 bg-gradient-to-b from-primary/5 to-background">
+      <main className="flex-1 bg-leaf-motif">
         <div className="mx-auto max-w-4xl px-6 py-16 text-center">
           <h1 className="font-headline text-3xl font-bold text-primary md:text-4xl">
             How would you like to be assisted today?
@@ -85,7 +85,7 @@ function MethodCard({
       </div>
       <h2 className={`mt-6 text-center font-headline text-xl font-bold ${accent}`}>{title}</h2>
       <p className="mt-3 text-center text-sm text-muted-foreground">{description}</p>
-      <ButtonLink href={ctaHref} variant={ctaVariant} className="mt-6 w-full">
+      <ButtonLink href={ctaHref} variant={ctaVariant} size="lg" className="mt-6 w-full">
         <span aria-hidden>{ctaIcon}</span> {ctaLabel}
       </ButtonLink>
     </div>

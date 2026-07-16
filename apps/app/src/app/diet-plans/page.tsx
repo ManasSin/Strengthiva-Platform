@@ -58,10 +58,10 @@ export default function DietPlansPage() {
           </ol>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <ButtonLink href="/assessment" variant="secondary">
+            <ButtonLink href="/assessment" variant="secondary" size="lg">
               Start Your Free Assessment
             </ButtonLink>
-            <ButtonLink href="/sample-plan" variant="outline">
+            <ButtonLink href="/sample-plan" variant="outline" size="lg">
               View Sample Plan
             </ButtonLink>
           </div>
