@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...and the template is exactly that opt-in. It holds only placeholders and
+# empty keys, and it is the only record of which variables the app needs —
+# strengthiva-backend already tracks its own .env.example the same way.
+!.env.example
 
 # vercel
 .vercel
