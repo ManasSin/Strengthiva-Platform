@@ -58,17 +58,34 @@ export function PhoneVerification({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [savingEmail, setSavingEmail] = useState(false);
 
-  const verified = !!session;
+  // Being signed in is what the assessment actually requires — but it is NOT the
+  // same as having verified a mobile number. An email/password account (every
+  // admin, and anyone predating phone auth) has a session and no phone at all;
+  // treating the two as one thing told those users "Mobile verified" over a
+  // number they had never given.
+  const signedIn = !!session;
+  const phoneNumber =
+    session?.user && "phoneNumber" in session.user && typeof session.user.phoneNumber === "string"
+      ? session.user.phoneNumber
+      : null;
+  const phoneVerified =
+    !!session?.user &&
+    "phoneNumberVerified" in session.user &&
+    session.user.phoneNumberVerified === true;
+
   // A session created by OTP starts on a placeholder address (auth.ts's
   // phoneTempEmail). Anything else — an existing account, an admin — already has
   // a real one and must not be asked again.
-  const needsEmail = verified && !!session?.user.email.endsWith(TEMP_EMAIL_DOMAIN) && !emailSaved;
+  const needsEmail = signedIn && !!session?.user.email.endsWith(TEMP_EMAIL_DOMAIN) && !emailSaved;
 
   useEffect(() => {
-    // The step can't be completed until the user is both verified and, if this is
-    // a fresh OTP sign-up, has given us an email.
-    onVerifiedChange(verified && !needsEmail);
-  }, [verified, needsEmail, onVerifiedChange]);
+    // The step can't be completed until the user is signed in and, if this is a
+    // fresh OTP sign-up, has given us an email. Gating on `signedIn` rather than
+    // on a verified phone deliberately: an already-authenticated user has nothing
+    // left to prove, and making an admin verify a mobile to open the assessment
+    // would be a regression.
+    onVerifiedChange(signedIn && !needsEmail);
+  }, [signedIn, needsEmail, onVerifiedChange]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -145,7 +162,7 @@ export function PhoneVerification({
 
   return (
     <div className="mb-8">
-      {!verified && (
+      {!signedIn && (
         <>
           <label htmlFor="mobile" className="mb-2 block text-base font-medium text-foreground">
             Mobile Number
@@ -241,12 +258,19 @@ export function PhoneVerification({
         </>
       )}
 
-      {verified && (
+      {signedIn && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
-          <span aria-hidden>✓</span> Mobile verified
-          {session?.user && "phoneNumber" in session.user && typeof session.user.phoneNumber === "string"
-            ? ` — +91 ${formatMobile(session.user.phoneNumber)}`
-            : ""}
+          {phoneVerified ? (
+            <>
+              <span aria-hidden>✓</span> Mobile verified
+              {phoneNumber ? ` — +91 ${formatMobile(phoneNumber)}` : ""}
+            </>
+          ) : (
+            // Signed in on an account with no phone — say what is actually true.
+            <>
+              <span aria-hidden>✓</span> Signed in as {session?.user.email}
+            </>
+          )}
         </div>
       )}
 
