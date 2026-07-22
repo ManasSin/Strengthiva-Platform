@@ -152,15 +152,26 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
 function ProductCard({ product }: { product: ResolvedProduct }) {
   const [adding, setAdding] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
 
   async function handleAddToCart(variantId: string) {
     setAdding(true);
+    setCartError(null);
     try {
       const { store_cart_url } = await api.addToCart(variantId);
       window.open(store_cart_url, "_blank");
-    } catch {
-      // Cart Bridge failure — leave the button re-enabled so the user can retry,
-      // per app/routers/cart.py's 502 on MedusaClientError.
+    } catch (err) {
+      // Cart Bridge failure — surface it and leave the button re-enabled so the
+      // user can retry, per app/routers/cart.py's 502 on MedusaClientError.
+      // Swallowing this silently made a broken Cart Bridge look like a dead
+      // button, which is exactly how it was reported by the client.
+      if (err instanceof ApiError && err.status === 401) {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      setCartError(
+        err instanceof ApiError ? err.message : "Couldn't add this to your cart. Please try again.",
+      );
     } finally {
       setAdding(false);
     }
@@ -201,6 +212,8 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
           </Button>
         </div>
       )}
+
+      {cartError && <p className="mt-3 text-xs text-red-600">{cartError}</p>}
     </div>
   );
 }
