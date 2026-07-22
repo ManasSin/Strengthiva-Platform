@@ -222,6 +222,28 @@ export type QuestionUpdatePayload = Partial<Omit<QuestionCreatePayload, "step_id
 export type OptionCreatePayload = { value: string; label: string; order_index?: number };
 export type OptionUpdatePayload = Partial<OptionCreatePayload> & { active?: boolean };
 
+export type ReportListItem = {
+  id: string;
+  created_at: string;
+  summary: string;
+};
+
+export type OrderLineItem = {
+  medusa_product_id: string | null;
+  medusa_variant_id: string | null;
+  quantity: number;
+  unit_price: number | null;
+  product_name: string | null;
+};
+
+export type OrderListItem = {
+  id: string;
+  medusa_order_id: string;
+  line_items: OrderLineItem[];
+  total: number | null;
+  ordered_at: string;
+};
+
 export type ReportResponse = {
   id: string;
   summary: string;
@@ -266,6 +288,13 @@ export const api = {
     }),
 
   getReport: (reportId: string) => request<ReportResponse>(`/api/v1/reports/${reportId}`),
+
+  // ── Account section (/account) ───────────────────────────────────────────
+  listReports: () => request<ReportListItem[]>("/api/v1/reports"),
+
+  // Served from purchase_events (written by the order.placed webhook), not from
+  // Medusa directly — see strengthiva-backend/app/routers/orders.py.
+  listOrders: () => request<OrderListItem[]>("/api/v1/orders"),
 
   addToCart: (medusaVariantId: string, quantity = 1) =>
     request<{ store_cart_url: string }>("/api/v1/cart/add", {

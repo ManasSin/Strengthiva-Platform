@@ -28,9 +28,17 @@ export function MarketingNav() {
             About
           </Link>
         </nav>
-        <ButtonLink href="/assessment" variant="default" size={"lg"} className="text-sm">
-          Start Assessment
-        </ButtonLink>
+        <div className="flex items-center gap-4">
+          {/* Server-gated at /account/layout.tsx — a signed-out visitor who clicks
+              this is redirected to /login and back again, so the link doesn't need
+              to know whether there's a session. */}
+          <Link href="/account" className="text-sm font-medium text-foreground hover:text-primary">
+            Account
+          </Link>
+          <ButtonLink href="/assessment" variant="default" size={"lg"} className="text-sm">
+            Start Assessment
+          </ButtonLink>
+        </div>
       </div>
     </header>
   );

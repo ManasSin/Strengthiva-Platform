@@ -34,6 +34,14 @@ export const auth = betterAuth({
     // state rather than assuming sign-up == signed in.
     requireEmailVerification: true,
   },
+  // Self-serve account deletion, exposed at /account/security. Off by default in
+  // Better Auth, so this opt-in is what makes delete-user reachable at all.
+  // The client purges this service's data via FastAPI first — see
+  // strengthiva-backend/app/routers/users.py::delete_my_data — because Better Auth
+  // owns only the auth tables and would otherwise leave health records behind.
+  user: {
+    deleteUser: { enabled: true },
+  },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail(user.email, url);
