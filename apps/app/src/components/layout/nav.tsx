@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button-link";
+import { STORE_URL } from "@/lib/site";
 
 // Marketing nav, per the Figma "Strengthiva - Home" export. Distinct from the
 // authenticated app shell's Home/Wellness/Activity/Profile nav (modules/app-frontend.md
@@ -17,11 +18,14 @@ export function MarketingNav() {
           </Link>
           {/* Products routes cross-app to store.strengthiva.com, per
               modules/app-frontend.md §1 — not an in-app page. */}
-          <a href="http://localhost:3001" className="hover:text-primary">
+          <a href={STORE_URL} className="hover:text-primary">
             Products
           </a>
           <Link href="/diet-plans" className="hover:text-primary">
             Diet Plans
+          </Link>
+          <Link href="/about" className="hover:text-primary">
+            About
           </Link>
         </nav>
         <ButtonLink href="/assessment" variant="default" size={"lg"} className="text-sm">

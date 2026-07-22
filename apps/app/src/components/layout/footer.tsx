@@ -1,3 +1,5 @@
+import { STORE_URL } from "@/lib/site";
+
 export function MarketingFooter() {
   return (
     <footer className="border-t border-border bg-tertiary/40">
@@ -11,15 +13,16 @@ export function MarketingFooter() {
           links={[
             { label: "Assessment", href: "/assessment" },
             { label: "Diet Plans", href: "/diet-plans" },
-            { label: "Supplements", href: "http://localhost:3001" },
+            { label: "Supplements", href: STORE_URL },
           ]}
         />
         <FooterColumn
-          title="Support"
+          title="Company"
           links={[
-            { label: "Shipping Policy", href: "/shipping-policy" },
+            { label: "About Us", href: "/about" },
             { label: "Contact Us", href: "/contact" },
             { label: "FAQs", href: "/faqs" },
+            { label: "Shipping Policy", href: "/shipping-policy" },
           ]}
         />
         <FooterColumn
