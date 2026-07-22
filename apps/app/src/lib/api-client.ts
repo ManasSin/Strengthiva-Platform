@@ -298,6 +298,12 @@ export const api = {
     });
   },
 
+  deleteIndexedDocument: (documentId: string, docType: "diet_chart" | "product_recommendation") =>
+    request<{ chunks_deleted: number; total_in_collection: number }>(
+      `/api/v1/test/index/documents/${documentId}?doc_type=${docType}`,
+      { method: "DELETE" }
+    ),
+
   // ── Admin: Batch Certificates (/admin/batch-certificates) ────────────────
   createBatch: (batchNumber: string, productName: string | null) =>
     request<AdminBatch>("/api/v1/admin/batches", {
