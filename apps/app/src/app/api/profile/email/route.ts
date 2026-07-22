@@ -20,6 +20,8 @@ import { sendWelcomeEmail } from "@/lib/email";
 //   - refuses an address already registered to someone else.
 
 const TEMP_EMAIL_DOMAIN = "@phone.strengthiva.com";
+// Must match auth.ts's signUpOnVerification.getTempName.
+const PLACEHOLDER_NAME = "there";
 
 // Deliberately permissive: real-world addresses defeat clever patterns, and the
 // value is only ever used as a send target, never as a credential.
@@ -32,8 +34,9 @@ export async function POST(request: Request) {
   }
 
   let email: unknown;
+  let name: unknown;
   try {
-    ({ email } = await request.json());
+    ({ email, name } = await request.json());
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -60,16 +63,27 @@ export async function POST(request: Request) {
     );
   }
 
+  // OTP sign-up assigns the placeholder display name auth.ts's getTempName returns,
+  // because no name is known at that point. The assessment asks for one on the same
+  // screen, so adopt it — otherwise the placeholder is what reaches the welcome
+  // email and, via the Cart Bridge, the customer's first name in Medusa. Same
+  // narrow-write rule as the email: only ever replaces the placeholder.
+  const realName =
+    typeof name === "string" && name.trim() && session.user.name === PLACEHOLDER_NAME
+      ? name.trim().slice(0, 100)
+      : undefined;
+
   await ctx.internalAdapter.updateUser(session.user.id, {
     email: normalized,
     // Not verified — nobody has clicked anything. Stated explicitly so this
     // account can't be mistaken for one that went through email verification.
     emailVerified: false,
+    ...(realName ? { name: realName } : {}),
   });
 
   // After the update, never before: a failed send must not cost the user their
   // email address. sendWelcomeEmail swallows its own errors for the same reason.
-  await sendWelcomeEmail(normalized, session.user.name);
+  await sendWelcomeEmail(normalized, realName ?? session.user.name);
 
   return NextResponse.json({ ok: true });
 }

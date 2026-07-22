@@ -1,12 +1,39 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { adaptQuestionnaireSchema, buildSteps } from "@/lib/questionnaire-schema";
 import type { Answers, StepDef } from "@/lib/questionnaire-types";
 import { api, ApiError } from "@/lib/api-client";
 import { FieldRenderer } from "./field-renderer";
 import { BmiField } from "./bmi-field";
+import { PhoneVerification } from "./phone-verification";
 import { Button } from "@/components/ui/button";
+
+// Identity is collected directly under the name field, on whichever step asks for
+// it — anchored to the field rather than to a step index so that reordering steps
+// in /admin/questionnaire can't strand it. Same approach as the BMI composite
+// (bmiInsertBeforeFieldKey), which is anchored to "occupation".
+const IDENTITY_ANCHOR_FIELD = "name";
+
+// Mobile number and email are owned by PhoneVerification, which verifies them and
+// ties them to the account. Questionnaire questions asking for the same thing get
+// hidden rather than rendered alongside it: two mobile fields on one screen is
+// confusing, only one of them would be verified, and the answer would be stored
+// on the assessment as a second, unverified copy of the contact details already
+// on the user record.
+//
+// Matched on a normalised key so "mobile number", "mobile-no" and "phone" are all
+// caught. If a genuinely different contact question is ever needed (an alternate
+// number, say), give it a key that doesn't read as the user's own — or drop this
+// suppression and delete the duplicate in /admin/questionnaire instead.
+const IDENTITY_FIELD_KEYS = new Set([
+  "mobile", "mobileno", "mobilenumber", "phone", "phoneno", "phonenumber",
+  "contact", "contactno", "contactnumber", "email", "emailid", "emailaddress",
+]);
+
+function isIdentityField(fieldKey: string): boolean {
+  return IDENTITY_FIELD_KEYS.has(fieldKey.toLowerCase().replace(/[^a-z0-9]/gi, ""));
+}
 
 export function AssessmentWizard({
   onComplete,
@@ -27,6 +54,10 @@ export function AssessmentWizard({
   // old hardcoded version.
   const [allSteps, setAllSteps] = useState<StepDef[] | null>(null);
   const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [identityVerified, setIdentityVerified] = useState(false);
+  // Stable identity so PhoneVerification's reporting effect doesn't re-fire on
+  // every wizard render.
+  const handleVerifiedChange = useCallback((value: boolean) => setIdentityVerified(value), []);
 
   useEffect(() => {
     api
@@ -43,7 +74,9 @@ export function AssessmentWizard({
   const clampedIndex = Math.min(stepIndex, Math.max(steps.length - 1, 0));
   const step = steps[clampedIndex];
 
-  const visibleFields = step ? step.fields.filter((f) => !f.visibleIf || f.visibleIf(answers)) : [];
+  const visibleFields = step
+    ? step.fields.filter((f) => (!f.visibleIf || f.visibleIf(answers)) && !isIdentityField(f.id))
+    : [];
   // Only the step containing the BMI composite field has this set (seeded
   // only on basic-info) — generalizes the old `step.id === "basic-info"` check.
   const bmiAnchorFieldKey = step?.bmiInsertBeforeFieldKey;
@@ -73,12 +106,18 @@ export function AssessmentWizard({
     parseFloat((answers["height-cm"] as string) || "") >= 50 &&
     parseFloat((answers["weight-kg"] as string) || "") >= 10;
 
+  // The step holding the identity anchor can't be left until the mobile number is
+  // verified (and, for a fresh OTP sign-up, an email given) — the assessment is
+  // submitted to an authenticated endpoint, so collecting the rest of the answers
+  // first would only fail at the end with everything already typed in.
+  const showsIdentity = visibleFields.some((f) => f.id === IDENTITY_ANCHOR_FIELD);
+
   const isStepValid = Boolean(step) && visibleFields
     .filter((f) => f.required)
     .every((f) => {
       const v = answers[f.id];
       return Array.isArray(v) ? v.length > 0 : !!v;
-    }) && (!bmiAnchorFieldKey || bmiValid);
+    }) && (!bmiAnchorFieldKey || bmiValid) && (!showsIdentity || identityVerified);
 
   const isLastStep = clampedIndex === steps.length - 1;
   const progressPct = steps.length > 0 ? Math.round(((clampedIndex + 1) / steps.length) * 100) : 0;
@@ -129,6 +168,14 @@ export function AssessmentWizard({
               <BmiField answers={answers} onChange={(id, v) => handleFieldChange(id, v)} />
             )}
             <FieldRenderer field={field} answers={answers} onChange={handleFieldChange} />
+            {/* Directly below the name field, per the flow the client specified:
+                name, then verify the mobile, then email. */}
+            {field.id === IDENTITY_ANCHOR_FIELD && (
+              <PhoneVerification
+                name={(answers[IDENTITY_ANCHOR_FIELD] as string | undefined) ?? undefined}
+                onVerifiedChange={handleVerifiedChange}
+              />
+            )}
           </div>
         ))}
       </div>
