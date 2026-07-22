@@ -23,6 +23,16 @@ export default function AdminHomePage() {
             Upload and vet batch quality certificates, generate QR codes.
           </div>
         </Link>
+        <Link
+          href="/admin/questionnaire"
+          className="rounded-lg border bg-white p-6 hover:border-gray-400"
+        >
+          <div className="font-medium">Questionnaire</div>
+          <div className="text-sm text-gray-500 mt-1">
+            Add, edit, reorder, or hide health-assessment questions — including whole new
+            disease-condition steps.
+          </div>
+        </Link>
       </div>
     </div>
   );

@@ -103,6 +103,125 @@ export type ResolvedProduct = {
     | { status: "unmapped" };
 };
 
+export type QuestionnaireOptionOut = {
+  value: string;
+  label: string;
+};
+
+export type QuestionnaireQuestionOut = {
+  field_key: string;
+  label: string;
+  sublabel: string | null;
+  placeholder: string | null;
+  field_type: string;
+  required: boolean;
+  columns: number | null;
+  min: number | null;
+  max: number | null;
+  exclusive_value: string | null;
+  visibility_rule: Record<string, unknown> | null;
+  options: QuestionnaireOptionOut[];
+};
+
+export type QuestionnaireStepOut = {
+  key: string;
+  title: string;
+  icon: string;
+  step_type: string;
+  visibility_rule: Record<string, unknown> | null;
+  bmi_insert_before_field_key: string | null;
+  questions: QuestionnaireQuestionOut[];
+};
+
+export type QuestionnaireSchemaResponse = {
+  steps: QuestionnaireStepOut[];
+};
+
+// ── Admin: Questionnaire (/admin/questionnaire) ────────────────────────────
+// Mirrors strengthiva-backend/app/schemas/questionnaire_admin.py.
+
+export type AdminOption = {
+  id: string;
+  value: string;
+  label: string;
+  order_index: number;
+  active: boolean;
+};
+
+export type AdminQuestion = {
+  id: string;
+  step_id: string;
+  field_key: string;
+  label: string;
+  sublabel: string | null;
+  placeholder: string | null;
+  field_type: string;
+  required: boolean;
+  columns: number | null;
+  min: number | null;
+  max: number | null;
+  order_index: number;
+  active: boolean;
+  prompt_label: string | null;
+  exclusive_value: string | null;
+  visibility_rule: Record<string, unknown> | null;
+  is_protected: boolean;
+  options: AdminOption[];
+};
+
+export type AdminStep = {
+  id: string;
+  key: string;
+  title: string;
+  icon: string;
+  step_type: string;
+  order_index: number;
+  active: boolean;
+  visibility_rule: Record<string, unknown> | null;
+  bmi_insert_before_field_key: string | null;
+  prompt_section: string | null;
+  include_in_prompt: boolean;
+  questions: AdminQuestion[];
+};
+
+export type StepCreatePayload = {
+  key: string;
+  title: string;
+  icon: string;
+  step_type: "fixed" | "disease_block";
+  order_index?: number;
+  visibility_rule?: Record<string, unknown> | null;
+  bmi_insert_before_field_key?: string | null;
+  prompt_section?: string | null;
+  include_in_prompt?: boolean;
+};
+
+export type StepUpdatePayload = Partial<Omit<StepCreatePayload, "key" | "step_type">> & { active?: boolean };
+
+export type QuestionCreatePayload = {
+  step_id: string;
+  field_key: string;
+  label: string;
+  sublabel?: string | null;
+  placeholder?: string | null;
+  field_type: string;
+  required?: boolean;
+  columns?: number | null;
+  min?: number | null;
+  max?: number | null;
+  order_index?: number;
+  prompt_label?: string | null;
+  exclusive_value?: string | null;
+  visibility_rule?: Record<string, unknown> | null;
+};
+
+export type QuestionUpdatePayload = Partial<Omit<QuestionCreatePayload, "step_id" | "field_key">> & {
+  active?: boolean;
+};
+
+export type OptionCreatePayload = { value: string; label: string; order_index?: number };
+export type OptionUpdatePayload = Partial<OptionCreatePayload> & { active?: boolean };
+
 export type ReportResponse = {
   id: string;
   summary: string;
@@ -113,6 +232,10 @@ export type ReportResponse = {
 };
 
 export const api = {
+  // DB-backed replacement for the hardcoded questionnaire-schema.ts content —
+  // see strengthiva-backend/app/routers/questionnaire.py.
+  getQuestionnaireSchema: () => request<QuestionnaireSchemaResponse>("/api/v1/questionnaire/schema"),
+
   createHealthAssessment: (answers: Record<string, unknown>, prescriptionId?: string) =>
     request<HealthAssessmentResponse>("/api/v1/health-assessments", {
       method: "POST",
@@ -198,6 +321,55 @@ export const api = {
       `/api/v1/admin/batches/${batchId}/certificates/${certificateId}/vet`,
       { method: "POST", body: JSON.stringify({ vetted_by: vettedBy }) }
     ),
+
+  // ── Admin: Questionnaire (/admin/questionnaire) ──────────────────────────
+  getAdminQuestionnaireSteps: () =>
+    request<{ steps: AdminStep[] }>("/api/v1/admin/questionnaire/steps"),
+
+  createStep: (payload: StepCreatePayload) =>
+    request<AdminStep>("/api/v1/admin/questionnaire/steps", { method: "POST", body: JSON.stringify(payload) }),
+  updateStep: (stepId: string, payload: StepUpdatePayload) =>
+    request<AdminStep>(`/api/v1/admin/questionnaire/steps/${stepId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteStep: (stepId: string) =>
+    request<void>(`/api/v1/admin/questionnaire/steps/${stepId}`, { method: "DELETE" }),
+  reorderSteps: (stepIds: string[]) =>
+    request<void>("/api/v1/admin/questionnaire/steps/reorder", {
+      method: "PUT",
+      body: JSON.stringify({ step_ids: stepIds }),
+    }),
+
+  createQuestion: (payload: QuestionCreatePayload) =>
+    request<AdminQuestion>("/api/v1/admin/questionnaire/questions", { method: "POST", body: JSON.stringify(payload) }),
+  updateQuestion: (questionId: string, payload: QuestionUpdatePayload) =>
+    request<AdminQuestion>(`/api/v1/admin/questionnaire/questions/${questionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteQuestion: (questionId: string) =>
+    request<void>(`/api/v1/admin/questionnaire/questions/${questionId}`, { method: "DELETE" }),
+  reorderQuestions: (stepId: string, questionIds: string[]) =>
+    request<void>(`/api/v1/admin/questionnaire/steps/${stepId}/reorder-questions`, {
+      method: "PUT",
+      body: JSON.stringify({ question_ids: questionIds }),
+    }),
+
+  createOption: (questionId: string, payload: OptionCreatePayload) =>
+    request<AdminOption>(`/api/v1/admin/questionnaire/questions/${questionId}/options`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateOption: (optionId: string, payload: OptionUpdatePayload) =>
+    request<AdminOption>(`/api/v1/admin/questionnaire/options/${optionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteOption: (optionId: string) =>
+    request<void>(`/api/v1/admin/questionnaire/options/${optionId}`, { method: "DELETE" }),
+  reorderOptions: (questionId: string, optionIds: string[]) =>
+    request<void>(`/api/v1/admin/questionnaire/questions/${questionId}/reorder-options`, {
+      method: "PUT",
+      body: JSON.stringify({ option_ids: optionIds }),
+    }),
 };
 
 export type IndexedDocument = {

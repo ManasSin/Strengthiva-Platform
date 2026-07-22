@@ -43,6 +43,9 @@ export default async function AdminLayout({
         <Link href="/admin/batch-certificates" className="text-sm text-gray-600 hover:text-gray-900">
           Batch Certificates
         </Link>
+        <Link href="/admin/questionnaire" className="text-sm text-gray-600 hover:text-gray-900">
+          Questionnaire
+        </Link>
         <span className="ml-auto text-sm text-gray-400">{session.user.email}</span>
       </nav>
       <main className="max-w-4xl mx-auto px-6 py-10">{children}</main>
