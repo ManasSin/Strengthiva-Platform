@@ -13,11 +13,13 @@ type PaginatedProductsParams = {
   category_id?: string[]
   id?: string[]
   order?: string
+  q?: string
 }
 
 export default async function PaginatedProducts({
   sortBy,
   page,
+  query,
   collectionId,
   categoryId,
   productsIds,
@@ -26,6 +28,7 @@ export default async function PaginatedProducts({
 }: {
   sortBy?: SortOptions
   page: number
+  query?: string
   collectionId?: string
   categoryId?: string
   productsIds?: string[]
@@ -34,6 +37,13 @@ export default async function PaginatedProducts({
 }) {
   const queryParams: PaginatedProductsParams = {
     limit: 12,
+  }
+
+  // Passed through to Medusa's /store/products `q` so the match happens
+  // server-side. Filtering here instead would break paging and the result
+  // count: listProductsWithSort fetches 100 rows and slices them in memory.
+  if (query) {
+    queryParams["q"] = query
   }
 
   if (collectionId) {
@@ -69,6 +79,16 @@ export default async function PaginatedProducts({
   })
 
   const totalPages = Math.ceil(count / PRODUCT_LIMIT)
+
+  if (products.length === 0) {
+    return (
+      <p className="text-ui-fg-muted" data-testid="no-products-message">
+        {query
+          ? `No products match “${query}”.`
+          : "No products available right now."}
+      </p>
+    )
+  }
 
   return (
     <>

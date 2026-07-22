@@ -8,10 +8,13 @@ import {
   parseOptionValueIds,
 } from "@lib/util/product-option-filters"
 import OptionsPicker from "./options-picker"
+import SearchBox from "./search-box"
 import SortProducts, { SortOptions } from "./sort-products"
 
 type RefinementListProps = {
   sortBy: SortOptions
+  /** Current `q` from the URL. Only meaningful when `search` is enabled. */
+  query?: string
   search?: boolean
   hideOptionsPicker?: boolean
   "data-testid"?: string
@@ -19,6 +22,8 @@ type RefinementListProps = {
 
 const RefinementList = ({
   sortBy,
+  query = "",
+  search = false,
   hideOptionsPicker = false,
   "data-testid": dataTestId,
 }: RefinementListProps) => {
@@ -47,8 +52,21 @@ const RefinementList = ({
     [pathname, router, searchParams]
   )
 
-  const setQueryParams = (name: string, value: string) =>
-    updateQueryParams((params) => params.set(name, value))
+  // Memoized because SearchBox debounces on this identity — an arrow function
+  // recreated every render would restart its timer on each re-render.
+  const setQueryParams = useCallback(
+    (name: string, value: string) =>
+      updateQueryParams((params) => {
+        // An empty value means "no filter" — drop the key entirely rather than
+        // leaving ?q= hanging around in the URL.
+        if (value) {
+          params.set(name, value)
+        } else {
+          params.delete(name)
+        }
+      }),
+    [updateQueryParams]
+  )
 
   const selectedOptionValueIds = useMemo(
     () => parseOptionValueIds(searchParams),
@@ -65,6 +83,13 @@ const RefinementList = ({
 
   return (
     <div className="flex flex-col gap-12 py-4 mb-8 small:px-0 pl-6 small:min-w-[250px] small:ml-[1.675rem]">
+      {search && (
+        <SearchBox
+          value={query}
+          setQueryParams={setQueryParams}
+          data-testid="store-search-input"
+        />
+      )}
       <SortProducts
         sortBy={sortBy}
         setQueryParams={setQueryParams}
