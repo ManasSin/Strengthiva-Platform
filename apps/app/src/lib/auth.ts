@@ -1,7 +1,22 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins/admin";
+import { phoneNumber } from "better-auth/plugins/phone-number";
 import { Pool } from "pg";
 import { sendVerificationEmail } from "./email";
+import { normalizeIndianMobile, sendOtpSms } from "./sms";
+
+// Temp email assigned when a user is created by phone-OTP sign-up, before they
+// have given us a real one (the assessment collects it on the very next screen).
+//
+// Must be a syntactically valid address on a real TLD — NOT something like
+// "@phone.local". This value is forwarded to Medusa when the Cart Bridge creates
+// the customer record, and Medusa rejects a domain with no TLD outright ("Invalid
+// request: Invalid email address"), which surfaces as a 502 on add-to-cart. That
+// exact bug was hit with the dev user's "dev@localhost" — see
+// strengthiva-backend/app/dependencies/auth.py::dev_user.
+//
+// The phone. subdomain does not need to accept mail; it only needs to parse.
+const phoneTempEmail = (phone: string) => `${phone}@phone.strengthiva.com`;
 
 // Writes to the SAME Postgres database strengthiva-backend's FastAPI reads from
 // (app/models/auth.py — session/user/account/verification tables). Better Auth
@@ -44,5 +59,43 @@ export const auth = betterAuth({
   // docs/platform-architecture/tech-specs/backend/admin-authentication.md.
   // No sign-up flow ever sets role="admin" — bootstrap is a direct SQL UPDATE,
   // see that doc.
-  plugins: [admin()],
+  plugins: [
+    admin(),
+    // Mobile + OTP is the primary customer path (collected in assessment step 1);
+    // emailAndPassword above stays enabled for /admin accounts, which keep signing
+    // in by email. Decided 2026-07-22.
+    phoneNumber({
+      // Better Auth generates and verifies the code itself and MSG91 is only the
+      // transport, so expiry and attempt-limiting have exactly one owner. These
+      // three are Better Auth's own defaults, set explicitly because they are the
+      // brute-force envelope for a 6-digit code and shouldn't drift silently.
+      otpLength: 6,
+      expiresIn: 300,
+      allowedAttempts: 3,
+
+      sendOTP: async ({ phoneNumber: to, code }) => {
+        // Throws on failure (see sms.ts) — Better Auth turns that into an error
+        // response, so the user is told the SMS didn't go out instead of waiting
+        // for a code that was never sent.
+        await sendOtpSms(to, code);
+      },
+
+      // Reuses the same validator the SMS layer applies, so the browser, Better
+      // Auth, and MSG91 all agree on what counts as a valid number rather than
+      // discovering the disagreement at send time.
+      phoneNumberValidator: (value) => normalizeIndianMobile(value) !== null,
+
+      // A verified phone IS the sign-up: no separate registration step. The user
+      // row is created on first successful OTP, and the assessment collects the
+      // real email on the next screen, which replaces the temp one below.
+      signUpOnVerification: {
+        getTempEmail: phoneTempEmail,
+        // Without this the phone number becomes the display name, which then shows
+        // up in the report greeting. The assessment asks for a real name anyway.
+        getTempName: () => "there",
+      },
+
+      requireVerification: true,
+    }),
+  ],
 });
