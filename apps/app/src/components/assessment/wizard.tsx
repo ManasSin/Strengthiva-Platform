@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { adaptQuestionnaireSchema, buildSteps } from "@/lib/questionnaire-schema";
 import type { Answers, StepDef } from "@/lib/questionnaire-types";
 import { api, ApiError } from "@/lib/api-client";
@@ -8,6 +8,7 @@ import { FieldRenderer } from "./field-renderer";
 import { BmiField } from "./bmi-field";
 import { PhoneVerification } from "./phone-verification";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Identity is collected directly under the name field, on whichever step asks for
 // it — anchored to the field rather than to a step index so that reordering steps
@@ -46,6 +47,10 @@ export function AssessmentWizard({
 }) {
   const [answers, setAnswers] = useState<Answers>(initialAnswers ?? {});
   const [stepIndex, setStepIndex] = useState(0);
+  // 1 forward, -1 back — drives which way the next step slides in, so movement
+  // through the wizard feels spatial rather than teleporting.
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const didMountRef = useRef(false);
 
   // Fetched once from FastAPI (DB-backed — see questionnaire-schema.ts's
   // module docstring) rather than imported as a static module, but still
@@ -73,6 +78,37 @@ export function AssessmentWizard({
   const steps = useMemo(() => (allSteps ? buildSteps(answers, allSteps) : []), [answers, allSteps]);
   const clampedIndex = Math.min(stepIndex, Math.max(steps.length - 1, 0));
   const step = steps[clampedIndex];
+
+  // Scroll anchoring would otherwise drag the page downward when a shorter step
+  // is replaced by a taller one while the user is scrolled near the bottom (the
+  // browser tries to keep the bottom-most content in view). That fights the
+  // scroll-to-top below and reads as a jump to the bottom — confirmed live.
+  // Disabled for the wizard's lifetime only, then restored.
+  useEffect(() => {
+    const html = document.documentElement;
+    const previous = html.style.overflowAnchor;
+    html.style.overflowAnchor = "none";
+    return () => {
+      html.style.overflowAnchor = previous;
+    };
+  }, []);
+
+  // Return to the top of the page whenever the step changes. A user scrolls down
+  // to reach the Back/Next buttons, so without this the next step opens already
+  // scrolled past its own heading. The keyed fade/slide below starts the incoming
+  // step near-invisible, so the scroll lands before it's readable and the swap
+  // reads as clean rather than as a mid-page jump. Depends on clampedIndex, not
+  // answers, so toggling a field mid-step never scrolls; skipped on first mount so
+  // arriving at the page doesn't yank the viewport. Smooth except under
+  // prefers-reduced-motion, where it jumps instantly.
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  }, [clampedIndex]);
 
   const visibleFields = step
     ? step.fields.filter((f) => (!f.visibleIf || f.visibleIf(answers)) && !isIdentityField(f.id))
@@ -141,6 +177,8 @@ export function AssessmentWizard({
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       {banner}
+      {/* Progress stays put and updates in place — only the step content below
+          animates, so the bar reads as continuous rather than re-entering. */}
       <div className="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
         <span>
           Step {clampedIndex + 1} of {steps.length}
@@ -151,12 +189,25 @@ export function AssessmentWizard({
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
       </div>
 
-      <h1 className="mb-6 font-headline text-2xl font-bold text-foreground">
-        <span aria-hidden>{step.icon}</span> {step.title}
-      </h1>
+      {/* Keyed on the step so it remounts and replays the entrance on every
+          navigation — but NOT on answer changes within a step (same id). Animates
+          transform + opacity only, so there's no layout shift; gated on
+          motion-safe so reduced-motion users get an instant swap. */}
+      <div
+        key={step.id}
+        className={cn(
+          "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:ease-out",
+          direction === 1
+            ? "motion-safe:slide-in-from-right-6"
+            : "motion-safe:slide-in-from-left-6",
+        )}
+      >
+        <h1 className="mb-6 font-headline text-2xl font-bold text-foreground">
+          <span aria-hidden>{step.icon}</span> {step.title}
+        </h1>
 
-      <div className="rounded-2xl border border-border bg-white p-8">
-        {visibleFields.map((field, index) => (
+        <div className="rounded-2xl border border-border bg-white p-8">
+          {visibleFields.map((field, index) => (
           <div key={field.id}>
             {/* BMI is a composite (height-cm + weight-kg) field not representable
                 as a single FieldDef — inserted right before the step's anchor
@@ -178,6 +229,7 @@ export function AssessmentWizard({
             )}
           </div>
         ))}
+        </div>
       </div>
 
       <div className="mt-6 flex items-center justify-between">
@@ -185,7 +237,10 @@ export function AssessmentWizard({
           type="button"
           variant="outline"
           size="lg"
-          onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+          onClick={() => {
+            setDirection(-1);
+            setStepIndex((i) => Math.max(0, i - 1));
+          }}
           disabled={clampedIndex === 0}
         >
           ← Back
@@ -199,6 +254,7 @@ export function AssessmentWizard({
             if (isLastStep) {
               onComplete(answers);
             } else {
+              setDirection(1);
               setStepIndex((i) => i + 1);
             }
           }}
