@@ -19,8 +19,12 @@ RUN pnpm install --frozen-lockfile
 # just as `environment:` on the running container.
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_API_URL
+# store.strengthiva.com — backs the nav/footer "Products"/"Supplements" links
+# (src/lib/site.ts). Without it the build inlines the localhost:3001 fallback.
+ARG NEXT_PUBLIC_STORE_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
-    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_STORE_URL=$NEXT_PUBLIC_STORE_URL
 
 RUN pnpm --filter @strengthiva/app build
 

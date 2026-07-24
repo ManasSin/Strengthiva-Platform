@@ -55,6 +55,7 @@ services:
       args:
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_STORE_URL: ${NEXT_PUBLIC_STORE_URL}
     restart: unless-stopped
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
