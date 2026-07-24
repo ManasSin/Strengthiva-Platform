@@ -1,4 +1,6 @@
-import { STORE_URL } from "@/lib/site";
+import { StoreLink } from "@/components/layout/store-link";
+
+type FooterLink = { label: string; href?: string; store?: boolean };
 
 export function MarketingFooter() {
   return (
@@ -13,7 +15,8 @@ export function MarketingFooter() {
           links={[
             { label: "Assessment", href: "/assessment" },
             { label: "Diet Plans", href: "/diet-plans" },
-            { label: "Supplements", href: STORE_URL },
+            // Opens the store in a new tab, carrying a signed-in user's login.
+            { label: "Supplements", store: true },
           ]}
         />
         <FooterColumn
@@ -37,22 +40,21 @@ export function MarketingFooter() {
   );
 }
 
-function FooterColumn({
-  title,
-  links,
-}: {
-  title: string;
-  links: { label: string; href: string }[];
-}) {
+function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
+  const linkClass = "hover:text-primary";
   return (
     <div>
       <div className="text-sm font-semibold text-foreground">{title}</div>
       <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
         {links.map((link) => (
           <li key={link.label}>
-            <a href={link.href} className="hover:text-primary">
-              {link.label}
-            </a>
+            {link.store ? (
+              <StoreLink className={linkClass}>{link.label}</StoreLink>
+            ) : (
+              <a href={link.href} className={linkClass}>
+                {link.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>

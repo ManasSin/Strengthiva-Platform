@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { useLogout } from "@/lib/use-logout";
 
 const SECTIONS = [
   { href: "/account", label: "Profile", exact: true },
@@ -12,6 +14,7 @@ const SECTIONS = [
 
 export function AccountNav() {
   const pathname = usePathname();
+  const { logout, loggingOut } = useLogout();
 
   return (
     <nav className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
@@ -23,6 +26,7 @@ export function AccountNav() {
           <Link
             key={section.href}
             href={section.href}
+            aria-current={active ? "page" : undefined}
             className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-primary text-white"
@@ -33,6 +37,19 @@ export function AccountNav() {
           </Link>
         );
       })}
+
+      {/* Sits at the bottom of the sidebar on desktop (own row above it), and as
+          the last chip on the mobile row. Logout clears the app session — see
+          useLogout for why the store session is left to expire on its own. */}
+      <button
+        type="button"
+        onClick={logout}
+        disabled={loggingOut}
+        className="mt-0 flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-white hover:text-foreground disabled:opacity-60 md:mt-2 md:border-t md:border-border md:pt-4"
+      >
+        <LogOut className="size-4" aria-hidden />
+        {loggingOut ? "Logging out…" : "Log out"}
+      </button>
     </nav>
   );
 }

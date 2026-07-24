@@ -3,39 +3,34 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, UserRound, X } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
+import { Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
-import { STORE_URL } from "@/lib/site";
+import { UserMenu } from "@/components/layout/user-menu";
+import { StoreLink } from "@/components/layout/store-link";
 import { cn } from "@/lib/utils";
 
 // Marketing nav. Client component because three things depend on runtime state
 // that the server doesn't have: the active-item highlight (usePathname), the
-// signed-in/signed-out account slot (useSession), and the mobile menu toggle.
+// signed-in/signed-out account menu (useSession), and the mobile menu toggle.
 //
 // One assessment entry point on purpose. There used to be both an "Assessment"
 // text link and a "Start Assessment" button, which is two doors to the same room
 // — the CTA is now the single, unambiguous way in, and the nav links are the
 // other destinations.
-type NavItem = { label: string; href: string; external?: boolean };
+type NavItem = { label: string; href?: string; store?: boolean };
 
 const NAV_ITEMS: NavItem[] = [
-  // Products lives on store.strengthiva.com, a different origin — a plain <a>,
-  // not a client-routed <Link>.
-  { label: "Products", href: STORE_URL, external: true },
+  // Products opens store.strengthiva.com (a separate origin) in a new tab, via
+  // StoreLink so a signed-in user carries their login across.
+  { label: "Products", store: true },
   { label: "Diet Plans", href: "/diet-plans" },
   { label: "About", href: "/about" },
 ];
 
-const TEMP_EMAIL_DOMAIN = "@phone.strengthiva.com";
-// auth.ts assigns this display name to OTP sign-ups before a real one is given.
-const PLACEHOLDER_NAME = "there";
-
 /**
  * Every clickable nav item shares one pill so hover, active and focus read the
- * same everywhere. `data-active` drives the current-page treatment; the
- * focus-visible ring is the brand green (--ring) and clears the translucent
- * header via ring-offset.
+ * same everywhere. The focus-visible ring is the brand green (--ring) and clears
+ * the translucent header via ring-offset.
  */
 function navItemClass(active: boolean): string {
   return cn(
@@ -50,73 +45,9 @@ function navItemClass(active: boolean): string {
 function useIsActive() {
   const pathname = usePathname();
   return (item: NavItem) => {
-    // External destinations (the store) are never "the current page".
-    if (item.external) return false;
+    if (!item.href) return false; // store link is never "the current page"
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
-}
-
-function NavItemLink({ item, active }: { item: NavItem; active: boolean }) {
-  const className = navItemClass(active);
-  return item.external ? (
-    <a href={item.href} className={className}>
-      {item.label}
-    </a>
-  ) : (
-    <Link href={item.href} className={className} aria-current={active ? "page" : undefined}>
-      {item.label}
-    </Link>
-  );
-}
-
-/** One or two initials for the avatar, or null when we should fall back to an icon. */
-function accountInitials(user: { name?: string | null; email: string }): string | null {
-  const name = user.name?.trim();
-  if (name && name.toLowerCase() !== PLACEHOLDER_NAME) {
-    const [first, second] = name.split(/\s+/);
-    return (first[0] + (second?.[0] ?? "")).toUpperCase();
-  }
-  if (user.email && !user.email.endsWith(TEMP_EMAIL_DOMAIN)) {
-    return user.email[0].toUpperCase();
-  }
-  return null;
-}
-
-/**
- * The account entry point. Signed in, it's a compact profile avatar; signed out,
- * a "Log in" pill. While the session is still resolving it's a fixed-size
- * placeholder so the header doesn't shift when it settles.
- */
-function AccountSlot() {
-  const { data: session, isPending } = authClient.useSession();
-
-  if (isPending) {
-    return <div className="size-9 animate-pulse rounded-full bg-foreground/10" aria-hidden />;
-  }
-
-  if (!session) {
-    return (
-      <Link href="/login" className={navItemClass(false)}>
-        Log in
-      </Link>
-    );
-  }
-
-  const initials = accountInitials(session.user);
-  return (
-    <Link
-      href="/account"
-      aria-label="Your account"
-      title="Your account"
-      className={cn(
-        "flex size-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary transition-colors",
-        "hover:bg-primary/20",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      )}
-    >
-      {initials ?? <UserRound className="size-[18px]" aria-hidden />}
-    </Link>
-  );
 }
 
 export function MarketingNav() {
@@ -145,13 +76,26 @@ export function MarketingNav() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
-          {NAV_ITEMS.map((item) => (
-            <NavItemLink key={item.label} item={item} active={isActive(item)} />
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.store ? (
+              <StoreLink key={item.label} className={navItemClass(false)}>
+                {item.label}
+              </StoreLink>
+            ) : (
+              <Link
+                key={item.label}
+                href={item.href!}
+                className={navItemClass(isActive(item))}
+                aria-current={isActive(item) ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <AccountSlot />
+          <UserMenu />
           <ButtonLink href="/assessment" variant="default" size="default" className="hidden md:inline-flex">
             Start Assessment
           </ButtonLink>
@@ -178,22 +122,18 @@ export function MarketingNav() {
           <ul className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => {
               const active = isActive(item);
-              const className = cn(
+              const mobileClass = cn(
                 "block rounded-lg px-4 py-2.5 text-base font-medium transition-colors",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-foreground/[0.04]",
+                active ? "bg-primary/10 text-primary" : "text-foreground hover:bg-foreground/[0.04]",
               );
               return (
                 <li key={item.label}>
-                  {item.external ? (
-                    <a href={item.href} className={className}>
-                      {item.label}
-                    </a>
+                  {item.store ? (
+                    <StoreLink className={mobileClass}>{item.label}</StoreLink>
                   ) : (
                     <Link
-                      href={item.href}
-                      className={className}
+                      href={item.href!}
+                      className={mobileClass}
                       aria-current={active ? "page" : undefined}
                     >
                       {item.label}
@@ -203,12 +143,7 @@ export function MarketingNav() {
               );
             })}
           </ul>
-          <ButtonLink
-            href="/assessment"
-            variant="default"
-            size="lg"
-            className="mt-3 w-full"
-          >
+          <ButtonLink href="/assessment" variant="default" size="lg" className="mt-3 w-full">
             Start Assessment
           </ButtonLink>
         </nav>
