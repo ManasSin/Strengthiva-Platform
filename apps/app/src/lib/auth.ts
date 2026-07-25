@@ -3,7 +3,7 @@ import { admin } from "better-auth/plugins/admin";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 import { Pool } from "pg";
 import { sendVerificationEmail } from "./email";
-import { normalizeIndianMobile, sendOtpSms } from "./sms";
+import { getFallbackOtp, normalizeIndianMobile, sendOtpSms } from "./sms";
 
 // Temp email assigned when a user is created by phone-OTP sign-up, before they
 // have given us a real one (the assessment collects it on the very next screen).
@@ -19,17 +19,19 @@ import { normalizeIndianMobile, sendOtpSms } from "./sms";
 const phoneTempEmail = (phone: string) => `${phone}@phone.strengthiva.com`;
 
 // Fallback OTP — a temporary bridge so the client can test the phone-signup flow
-// before MSG91 is live. When OTP_FALLBACK_CODE is set AND MSG91 is not configured,
-// that one fixed code verifies any number (sms.ts sends nothing and the code below
-// is accepted). This is a deliberate backdoor: anyone who knows the code can create
-// an account for any phone number, so it is ONLY for a staging/test deployment.
+// before MSG91 is live. When OTP_FALLBACK_CODE is set (to exactly 6 digits — see
+// getFallbackOtp) AND MSG91 is not configured, that one fixed code verifies any
+// number (sms.ts sends nothing and the code below is accepted). This is a
+// deliberate backdoor: anyone who knows the code can create an account for any
+// phone number, so it is ONLY for a staging/test deployment.
 //
-// It auto-disables the moment MSG91 is configured (msg91Configured below), and is
-// off entirely when OTP_FALLBACK_CODE is unset — so real production, with MSG91 and
-// no fallback code, uses Better Auth's own generated-and-verified OTP with nothing
-// to remove from the code. Remove the env var to turn it off.
-const msg91Configured = Boolean(process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID);
-const fallbackOtp = !msg91Configured ? process.env.OTP_FALLBACK_CODE?.trim() : undefined;
+// getFallbackOtp() is the single shared check (sms.ts) — not re-derived here —
+// so this can never disable while sms.ts still thinks the backdoor is live, or
+// vice versa. It auto-disables the moment MSG91 is configured, and is off
+// entirely when OTP_FALLBACK_CODE is unset or malformed — so real production,
+// with MSG91 and no fallback code, uses Better Auth's own generated-and-verified
+// OTP with nothing to remove from the code. Remove the env var to turn it off.
+const fallbackOtp = getFallbackOtp();
 if (fallbackOtp) {
   console.warn(
     "[auth] OTP_FALLBACK_CODE is active — a fixed OTP verifies any phone number. " +

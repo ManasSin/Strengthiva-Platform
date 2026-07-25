@@ -69,6 +69,53 @@ type Msg91Config = {
   otpVariable: string;
 };
 
+// The OTP input (phone-verification.tsx) is built for Better Auth's real,
+// server-generated code: exactly 6 digits, numeric-only (strips anything else as
+// typed, and disables Verify below 6 characters) — that shape is guaranteed by
+// Better Auth's own generateOTP(), never configurable input. A fallback code has
+// to satisfy the same shape or a real visitor can never type it in at all: found
+// live — a 4-digit fallback code left the Verify button permanently disabled,
+// with no error anywhere, since the mismatch never reaches the server to report
+// on. `otpLength` in auth.ts's phoneNumber() config is hardcoded to 6 for the
+// same reason — if that ever changes, this must change with it.
+const FALLBACK_OTP_SHAPE = /^\d{6}$/;
+
+/**
+ * The single source of truth for "is the fallback OTP backdoor active, and what
+ * is it" — computed once here and imported by both auth.ts (to decide whether to
+ * override verifyOTP) and sendOtpSms below (to decide whether to skip sending).
+ * Deliberately not left as two independent re-derivations of the same env vars:
+ * that split is exactly how a malformed fallback code could leave auth.ts
+ * expecting Better Auth's real OTP while sms.ts had already decided to send
+ * nothing — a code that was never delivered anywhere AND could never verify.
+ *
+ * Returns null when MSG91 is configured (fallback must never activate when real
+ * SMS works), when OTP_FALLBACK_CODE is unset, or when it's set but the wrong
+ * shape — the last case logs loudly rather than silently leaving a code nobody
+ * can ever enter, the same "fail loud, not quiet" rule config.py applies to
+ * DEV_MODE under ENVIRONMENT=production.
+ */
+export function getFallbackOtp(): string | null {
+  if (process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID) {
+    return null;
+  }
+  const raw = process.env.OTP_FALLBACK_CODE?.trim();
+  if (!raw) {
+    return null;
+  }
+  if (!FALLBACK_OTP_SHAPE.test(raw)) {
+    console.error(
+      `[auth] OTP_FALLBACK_CODE is set to "${raw}", which is not exactly 6 digits. ` +
+        "Ignoring it and disabling the fallback entirely — the OTP input only accepts " +
+        "6 numeric digits, so anything else can never be submitted through the real " +
+        "UI, which would otherwise fail with no visible error. Set it to 6 digits " +
+        "(e.g. 424242) to re-enable.",
+    );
+    return null;
+  }
+  return raw;
+}
+
 /**
  * Reads MSG91 config at call time. Returns null when unconfigured, which callers
  * treat as "fall back to console delivery" — but only outside production, where
@@ -109,12 +156,15 @@ export async function sendOtpSms(phoneNumber: string, code: string): Promise<voi
   const config = readConfig();
 
   if (!config) {
-    // Fallback OTP mode (auth.ts): MSG91 isn't configured but a fixed test code is,
-    // and auth.ts's verifyOTP accepts it directly — so there's nothing to deliver
-    // and, crucially, nothing to throw. This is what lets the client test the
-    // signup flow on a production build before MSG91 is live. Checked before the
-    // production guard below so it can legitimately no-op under NODE_ENV=production.
-    if (process.env.OTP_FALLBACK_CODE?.trim()) {
+    // Fallback OTP mode (auth.ts): MSG91 isn't configured but a valid fixed test
+    // code is, and auth.ts's verifyOTP accepts it directly — so there's nothing to
+    // deliver and, crucially, nothing to throw. This is what lets the client test
+    // the signup flow on a production build before MSG91 is live. Checked before
+    // the production guard below so it can legitimately no-op under
+    // NODE_ENV=production. Uses getFallbackOtp(), not a raw env read, so this can
+    // never disagree with auth.ts about whether the backdoor is actually active —
+    // see that function's docstring for the bug this closes.
+    if (getFallbackOtp()) {
       console.warn(
         `[sms] MSG91 not configured — fallback OTP active for ${redact(mobile)}. ` +
           "Enter OTP_FALLBACK_CODE to verify. (Testing backdoor — disable by setting up MSG91.)",
@@ -128,8 +178,9 @@ export async function sendOtpSms(phoneNumber: string, code: string): Promise<voi
     // under ENVIRONMENT=production.
     if (process.env.NODE_ENV === "production") {
       throw new SmsError(
-        "MSG91_AUTH_KEY / MSG91_TEMPLATE_ID are not set, and no OTP_FALLBACK_CODE is " +
-          "configured. Refusing to fall back to console OTP delivery in production.",
+        "MSG91_AUTH_KEY / MSG91_TEMPLATE_ID are not set, and OTP_FALLBACK_CODE is " +
+          "either unset or not usable (see server logs if it was set). Refusing to " +
+          "fall back to console OTP delivery in production.",
       );
     }
     // Local development before MSG91 credentials exist: print the code so the
