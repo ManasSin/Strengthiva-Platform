@@ -109,14 +109,27 @@ export async function sendOtpSms(phoneNumber: string, code: string): Promise<voi
   const config = readConfig();
 
   if (!config) {
+    // Fallback OTP mode (auth.ts): MSG91 isn't configured but a fixed test code is,
+    // and auth.ts's verifyOTP accepts it directly — so there's nothing to deliver
+    // and, crucially, nothing to throw. This is what lets the client test the
+    // signup flow on a production build before MSG91 is live. Checked before the
+    // production guard below so it can legitimately no-op under NODE_ENV=production.
+    if (process.env.OTP_FALLBACK_CODE?.trim()) {
+      console.warn(
+        `[sms] MSG91 not configured — fallback OTP active for ${redact(mobile)}. ` +
+          "Enter OTP_FALLBACK_CODE to verify. (Testing backdoor — disable by setting up MSG91.)",
+      );
+      return;
+    }
+
     // Production must never silently degrade to console delivery — that would
     // mean nobody can log in, with no visible cause. Same reasoning as
     // strengthiva-backend/app/config.py refusing to start with DEV_MODE=true
     // under ENVIRONMENT=production.
     if (process.env.NODE_ENV === "production") {
       throw new SmsError(
-        "MSG91_AUTH_KEY / MSG91_TEMPLATE_ID are not set. Refusing to fall back to " +
-          "console OTP delivery in production.",
+        "MSG91_AUTH_KEY / MSG91_TEMPLATE_ID are not set, and no OTP_FALLBACK_CODE is " +
+          "configured. Refusing to fall back to console OTP delivery in production.",
       );
     }
     // Local development before MSG91 credentials exist: print the code so the

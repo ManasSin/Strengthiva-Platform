@@ -18,6 +18,25 @@ import { normalizeIndianMobile, sendOtpSms } from "./sms";
 // The phone. subdomain does not need to accept mail; it only needs to parse.
 const phoneTempEmail = (phone: string) => `${phone}@phone.strengthiva.com`;
 
+// Fallback OTP — a temporary bridge so the client can test the phone-signup flow
+// before MSG91 is live. When OTP_FALLBACK_CODE is set AND MSG91 is not configured,
+// that one fixed code verifies any number (sms.ts sends nothing and the code below
+// is accepted). This is a deliberate backdoor: anyone who knows the code can create
+// an account for any phone number, so it is ONLY for a staging/test deployment.
+//
+// It auto-disables the moment MSG91 is configured (msg91Configured below), and is
+// off entirely when OTP_FALLBACK_CODE is unset — so real production, with MSG91 and
+// no fallback code, uses Better Auth's own generated-and-verified OTP with nothing
+// to remove from the code. Remove the env var to turn it off.
+const msg91Configured = Boolean(process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID);
+const fallbackOtp = !msg91Configured ? process.env.OTP_FALLBACK_CODE?.trim() : undefined;
+if (fallbackOtp) {
+  console.warn(
+    "[auth] OTP_FALLBACK_CODE is active — a fixed OTP verifies any phone number. " +
+      "This is a testing backdoor; configure MSG91 to disable it.",
+  );
+}
+
 // Writes to the SAME Postgres database strengthiva-backend's FastAPI reads from
 // (app/models/auth.py — session/user/account/verification tables). Better Auth
 // owns these tables exclusively; FastAPI's Alembic migrations never touch them.
@@ -84,9 +103,17 @@ export const auth = betterAuth({
       sendOTP: async ({ phoneNumber: to, code }) => {
         // Throws on failure (see sms.ts) — Better Auth turns that into an error
         // response, so the user is told the SMS didn't go out instead of waiting
-        // for a code that was never sent.
+        // for a code that was never sent. In fallback mode sms.ts sends nothing and
+        // returns quietly, so the UI still advances to the code-entry step.
         await sendOtpSms(to, code);
       },
+
+      // Fallback-only override: accept the fixed code for any number. Left
+      // undefined otherwise, so Better Auth verifies its own generated OTP (the
+      // real MSG91 path) with no code change needed to switch over.
+      ...(fallbackOtp
+        ? { verifyOTP: async ({ code }: { code: string }) => code === fallbackOtp }
+        : {}),
 
       // Reuses the same validator the SMS layer applies, so the browser, Better
       // Auth, and MSG91 all agree on what counts as a valid number rather than
