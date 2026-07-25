@@ -67,7 +67,20 @@ export function AssessmentWizard({
   useEffect(() => {
     api
       .getQuestionnaireSchema()
-      .then((schema) => setAllSteps(adaptQuestionnaireSchema(schema)))
+      .then((schema) => {
+        const adapted = adaptQuestionnaireSchema(schema);
+        if (adapted.length === 0) {
+          // A 200 response with zero steps is not "still loading" — without this,
+          // it fell through to `!allSteps || !step` below (allSteps === [] is
+          // truthy, step is undefined) and rendered the loading spinner forever,
+          // indistinguishable from a slow network. Confirmed live: an unseeded
+          // production questionnaire table produced exactly that — a silent
+          // infinite spin with no error at all, worse than a visible one.
+          setSchemaError("The assessment isn't available right now. Please try again shortly.");
+          return;
+        }
+        setAllSteps(adapted);
+      })
       .catch((err) => setSchemaError(err instanceof ApiError ? err.message : "Failed to load the assessment."));
   }, []);
 
