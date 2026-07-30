@@ -213,6 +213,17 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
         </div>
       )}
 
+      {/* A recommended product that isn't purchasable online is still shown (it may be
+          a genuine fit) — the client also sells through offline stores, so we point the
+          user there instead of hiding the recommendation. */}
+      {product.resolution.status !== "resolved" && (
+        <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          {product.resolution.status === "out_of_stock"
+            ? "Out of stock online — available at Strengthiva stores near you."
+            : "Available at Strengthiva stores — ask for it by name."}
+        </p>
+      )}
+
       {cartError && <p className="mt-3 text-xs text-red-600">{cartError}</p>}
     </div>
   );
@@ -221,8 +232,8 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
 function StatusBadge({ resolution }: { resolution: ResolvedProduct["resolution"] }) {
   const map = {
     resolved: { label: "In Stock", className: "bg-green-100 text-green-800" },
-    out_of_stock: { label: "Temporarily Unavailable", className: "bg-yellow-100 text-yellow-800" },
-    unmapped: { label: "Coming Soon", className: "bg-gray-100 text-gray-600" },
+    out_of_stock: { label: "In-store only", className: "bg-yellow-100 text-yellow-800" },
+    unmapped: { label: "In-store only", className: "bg-gray-100 text-gray-600" },
   } as const;
   const { label, className } = map[resolution.status];
   return (

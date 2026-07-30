@@ -129,8 +129,8 @@ export function ReportDocument({ report }: { report: ReportResponse }) {
                           : ""
                       }`
                     : product.resolution.status === "out_of_stock"
-                      ? "Temporarily unavailable"
-                      : "Coming soon"}
+                      ? "Out of stock online — available at Strengthiva stores"
+                      : "Available at Strengthiva stores"}
                 </Text>
               </View>
             ))}
