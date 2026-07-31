@@ -33,6 +33,16 @@ export default function AdminHomePage() {
             disease-condition steps.
           </div>
         </Link>
+        <Link
+          href="/admin/products"
+          className="rounded-lg border bg-white p-6 hover:border-gray-400"
+        >
+          <div className="font-medium">Products</div>
+          <div className="text-sm text-gray-500 mt-1">
+            Bulk-upload a product CSV — creates/updates catalogue items in Medusa and
+            maps them to the names the AI recommends, in one step.
+          </div>
+        </Link>
       </div>
     </div>
   );

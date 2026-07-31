@@ -333,6 +333,16 @@ export const api = {
       { method: "DELETE" }
     ),
 
+  // ── Admin: Product CSV import (/admin/products) ──────────────────────────
+  importProductsCsv: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<ProductImportResult>("/api/v1/admin/products/import-csv", {
+      method: "POST",
+      body: form,
+    });
+  },
+
   // ── Admin: Batch Certificates (/admin/batch-certificates) ────────────────
   createBatch: (batchNumber: string, productName: string | null) =>
     request<AdminBatch>("/api/v1/admin/batches", {
@@ -405,6 +415,21 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ option_ids: optionIds }),
     }),
+};
+
+export type ProductImportRowResult = {
+  row: number;
+  sku: string | null;
+  mapping_name: string | null;
+  status: "created" | "updated" | "error";
+  detail: string | null;
+};
+
+export type ProductImportResult = {
+  created: number;
+  updated: number;
+  errors: number;
+  rows: ProductImportRowResult[];
 };
 
 export type IndexedDocument = {
