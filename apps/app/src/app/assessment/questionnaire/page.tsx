@@ -27,6 +27,12 @@ function QuestionnaireContent() {
   const [showStreamliningBanner, setShowStreamliningBanner] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The assessment survives a failed report: POST /health-assessments succeeds and is
+  // persisted, then POST /reports (4 OpenAI calls, ~10-15s) is the fragile half — if the
+  // API worker handling it dies mid-flight, the whole request is lost. Holding the id
+  // here lets "Try again" re-run only the report step instead of making the user refill
+  // the wizard, and stops each retry from writing a duplicate assessment row.
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!prescriptionId) return;
@@ -56,8 +62,11 @@ function QuestionnaireContent() {
     setSubmitting(true);
     setError(null);
     try {
-      const assessment = await api.createHealthAssessment(answers, prescriptionId ?? undefined);
-      const report = await api.createReport(assessment.id);
+      // Reuse the assessment from a previous failed attempt rather than creating a
+      // second one for the same answers.
+      const id = assessmentId ?? (await api.createHealthAssessment(answers, prescriptionId ?? undefined)).id;
+      setAssessmentId(id);
+      const report = await api.createReport(id);
       router.push(`/report/${report.id}`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -65,6 +74,25 @@ function QuestionnaireContent() {
           ? `/assessment/questionnaire?prescriptionId=${prescriptionId}`
           : "/assessment/questionnaire";
         router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
+        return;
+      }
+      setError("We couldn't generate your report. Please try again.");
+      setSubmitting(false);
+    }
+  }
+
+  // Retries just the report generation for the already-saved assessment — the wizard
+  // answers are not needed again, so this is safe to call with no arguments.
+  async function retryReport() {
+    if (!assessmentId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const report = await api.createReport(assessmentId);
+      router.push(`/report/${report.id}`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push(`/login?redirect=${encodeURIComponent("/assessment/questionnaire")}`);
         return;
       }
       setError("We couldn't generate your report. Please try again.");
@@ -101,8 +129,17 @@ function QuestionnaireContent() {
       <MarketingNav />
       <main className="flex-1 bg-leaf-motif">
         {error && (
-          <div className="mx-auto mt-6 max-w-2xl rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+          <div className="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{error}</span>
+            {assessmentId && (
+              <button
+                type="button"
+                onClick={retryReport}
+                className="rounded-md bg-red-700 px-3 py-1.5 font-medium text-white hover:bg-red-800"
+              >
+                Try again
+              </button>
+            )}
           </div>
         )}
         <AssessmentWizard
