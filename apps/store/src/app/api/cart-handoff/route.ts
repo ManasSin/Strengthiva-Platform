@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { setAuthToken, setCartId } from "@lib/data/cookies"
+import { getBaseURL } from "@lib/util/env"
 
 // Cart Bridge handoff — the counterpart to strengthiva-backend's
 // POST /api/v1/cart/add (docs/platform-architecture/tech-specs/backend/
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")
 
   if (!code) {
-    return NextResponse.redirect(new URL("/cart", request.url))
+    return NextResponse.redirect(new URL("/cart", getBaseURL()))
   }
 
   try {

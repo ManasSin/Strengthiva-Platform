@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { setAuthToken } from "@lib/data/cookies"
+import { getBaseURL } from "@lib/util/env"
 
 // Plain-login SSO handoff — the counterpart to strengthiva-backend's
 // POST /api/v1/auth/store-login-handoff, for a user who signs in on app.
@@ -26,7 +27,11 @@ export async function GET(request: NextRequest) {
   const destination = safeRedirect(request.nextUrl.searchParams.get("redirect"))
 
   if (!code) {
-    return NextResponse.redirect(new URL(destination, request.url))
+    // Base the redirect on the public origin (NEXT_PUBLIC_BASE_URL), NOT request.url:
+  // behind Caddy the standalone server sees request.url as its internal bind address
+  // (http://0.0.0.0:3001), which would bounce the user to 0.0.0.0:3001 instead of
+  // store.strengthiva.com. destination is a safe same-origin path (see safeRedirect).
+  return NextResponse.redirect(new URL(destination, getBaseURL()))
   }
 
   try {
@@ -46,5 +51,9 @@ export async function GET(request: NextRequest) {
     // FastAPI unreachable — same graceful degradation as an expired code.
   }
 
-  return NextResponse.redirect(new URL(destination, request.url))
+  // Base the redirect on the public origin (NEXT_PUBLIC_BASE_URL), NOT request.url:
+  // behind Caddy the standalone server sees request.url as its internal bind address
+  // (http://0.0.0.0:3001), which would bounce the user to 0.0.0.0:3001 instead of
+  // store.strengthiva.com. destination is a safe same-origin path (see safeRedirect).
+  return NextResponse.redirect(new URL(destination, getBaseURL()))
 }
