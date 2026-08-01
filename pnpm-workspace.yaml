@@ -9,3 +9,16 @@ allowBuilds:
   protobufjs: true
   sharp: true
   unrs-resolver: true
+
+# Build resilience against npm-registry rate-limiting (HTTP 429). These live here,
+# NOT in .npmrc: pnpm 11 no longer reads its install-tuning settings from .npmrc
+# (verified 2026-08-01 — `pnpm config get` returned undefined for every .npmrc key),
+# so the old .npmrc copy was silently a no-op and cold Docker builds kept tripping
+# npm's per-IP anonymous 429 on the many @medusajs/* packages. Low parallelism plus
+# long, patient retries keeps both the download phase and pnpm 11's supply-chain
+# verification step reliable from this single VPS IP, without a private mirror.
+networkConcurrency: 2
+fetchRetries: 10
+fetchRetryMintimeout: 30000
+fetchRetryMaxtimeout: 180000
+fetchTimeout: 900000
