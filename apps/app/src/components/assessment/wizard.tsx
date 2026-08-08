@@ -2,23 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { adaptQuestionnaireSchema, buildSteps } from "@/lib/questionnaire-schema";
-import type { Answers, StepDef } from "@/lib/questionnaire-types";
+import type { Answers, FieldDef, StepDef } from "@/lib/questionnaire-types";
 import { api, ApiError } from "@/lib/api-client";
 import { FieldRenderer } from "./field-renderer";
 import { BmiField } from "./bmi-field";
 import { PhoneVerification } from "./phone-verification";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-// Identity is collected directly under the name field, on whichever step asks for
-// it — anchored to the field rather than to a step index so that reordering steps
-// in /admin/questionnaire can't strand it. Same approach as the BMI composite
-// (bmiInsertBeforeFieldKey), which is anchored to "occupation".
-const IDENTITY_ANCHOR_FIELD = "name";
 
 // Mobile number and email are owned by PhoneVerification, which verifies them and
 // ties them to the account. Questionnaire questions asking for the same thing get
-// hidden rather than rendered alongside it: two mobile fields on one screen is
+// hidden rather than rendered alongside it: two mobile fields on one form is
 // confusing, only one of them would be verified, and the answer would be stored
 // on the assessment as a second, unverified copy of the contact details already
 // on the user record.
@@ -36,6 +29,26 @@ function isIdentityField(fieldKey: string): boolean {
   return IDENTITY_FIELD_KEYS.has(fieldKey.toLowerCase().replace(/[^a-z0-9]/gi, ""));
 }
 
+function isAnswered(value: Answers[string] | undefined): boolean {
+  return Array.isArray(value) ? value.length > 0 : !!value;
+}
+
+/**
+ * The whole assessment on one page.
+ *
+ * Sections are NOT hand-authored: each is one entry from buildSteps(), the same
+ * DB-backed step list the paginated version used, so an admin adding a step in
+ * /admin/questionnaire still gets a section here with no code change — and the
+ * conditional disease-condition steps still appear and disappear inline as
+ * conditions are ticked (the step count was never fixed; it grows with the
+ * conditions selected).
+ *
+ * Mobile verification gates the entire form rather than sitting next to the name
+ * field: the assessment is submitted to an authenticated endpoint, so on a single
+ * page the alternative is letting someone fill in every answer and only then
+ * discovering they must verify. Verifying first costs one screen up front instead
+ * of the whole form's work at the end.
+ */
 export function AssessmentWizard({
   onComplete,
   initialAnswers,
@@ -46,22 +59,17 @@ export function AssessmentWizard({
   banner?: ReactNode;
 }) {
   const [answers, setAnswers] = useState<Answers>(initialAnswers ?? {});
-  const [stepIndex, setStepIndex] = useState(0);
-  // 1 forward, -1 back — drives which way the next step slides in, so movement
-  // through the wizard feels spatial rather than teleporting.
-  const [direction, setDirection] = useState<1 | -1>(1);
-  const didMountRef = useRef(false);
-
-  // Fetched once from FastAPI (DB-backed — see questionnaire-schema.ts's
-  // module docstring) rather than imported as a static module, but still
-  // recomputed into the visible step list client-side on every answer change
-  // (no added network round-trip per checkbox) — same responsiveness as the
-  // old hardcoded version.
   const [allSteps, setAllSteps] = useState<StepDef[] | null>(null);
   const [schemaError, setSchemaError] = useState<string | null>(null);
   const [identityVerified, setIdentityVerified] = useState(false);
+  // Set only once the user has tried to submit — required-but-empty questions stay
+  // unmarked until then, so a form the user has not yet worked through doesn't open
+  // covered in red.
+  const [showErrors, setShowErrors] = useState(false);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
   // Stable identity so PhoneVerification's reporting effect doesn't re-fire on
-  // every wizard render.
+  // every render.
   const handleVerifiedChange = useCallback((value: boolean) => setIdentityVerified(value), []);
 
   useEffect(() => {
@@ -70,74 +78,35 @@ export function AssessmentWizard({
       .then((schema) => {
         const adapted = adaptQuestionnaireSchema(schema);
         if (adapted.length === 0) {
-          // A 200 response with zero steps is not "still loading" — without this,
-          // it fell through to `!allSteps || !step` below (allSteps === [] is
-          // truthy, step is undefined) and rendered the loading spinner forever,
-          // indistinguishable from a slow network. Confirmed live: an unseeded
-          // production questionnaire table produced exactly that — a silent
-          // infinite spin with no error at all, worse than a visible one.
+          // A 200 response with zero steps is not "still loading" — without this it
+          // rendered a loading spinner forever, indistinguishable from a slow network.
+          // Confirmed live: an unseeded production questionnaire table produced exactly
+          // that — a silent infinite spin with no error at all, worse than a visible one.
           setSchemaError("The assessment isn't available right now. Please try again shortly.");
           return;
         }
         setAllSteps(adapted);
       })
-      .catch((err) => setSchemaError(err instanceof ApiError ? err.message : "Failed to load the assessment."));
+      .catch((err) =>
+        setSchemaError(err instanceof ApiError ? err.message : "Failed to load the assessment."),
+      );
   }, []);
 
-  // Recomputed every render — this is what makes the wizard grow/shrink as the
-  // user checks/unchecks chronic conditions (modules/app-frontend.md §4: "the
-  // wizard's step count is not fixed at 5 — it grows with how many conditions
-  // the user selects").
+  // Recomputed on every answer change — this is what makes sections appear and
+  // disappear as chronic conditions are ticked.
   const steps = useMemo(() => (allSteps ? buildSteps(answers, allSteps) : []), [answers, allSteps]);
-  const clampedIndex = Math.min(stepIndex, Math.max(steps.length - 1, 0));
-  const step = steps[clampedIndex];
 
-  // Scroll anchoring would otherwise drag the page downward when a shorter step
-  // is replaced by a taller one while the user is scrolled near the bottom (the
-  // browser tries to keep the bottom-most content in view). That fights the
-  // scroll-to-top below and reads as a jump to the bottom — confirmed live.
-  // Disabled for the wizard's lifetime only, then restored.
-  useEffect(() => {
-    const html = document.documentElement;
-    const previous = html.style.overflowAnchor;
-    html.style.overflowAnchor = "none";
-    return () => {
-      html.style.overflowAnchor = previous;
-    };
-  }, []);
-
-  // Return to the top of the page whenever the step changes. A user scrolls down
-  // to reach the Back/Next buttons, so without this the next step opens already
-  // scrolled past its own heading. The keyed fade/slide below starts the incoming
-  // step near-invisible, so the scroll lands before it's readable and the swap
-  // reads as clean rather than as a mid-page jump. Depends on clampedIndex, not
-  // answers, so toggling a field mid-step never scrolls; skipped on first mount so
-  // arriving at the page doesn't yank the viewport. Smooth except under
-  // prefers-reduced-motion, where it jumps instantly.
-  useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
-  }, [clampedIndex]);
-
-  const visibleFields = step
-    ? step.fields.filter((f) => (!f.visibleIf || f.visibleIf(answers)) && !isIdentityField(f.id))
-    : [];
-  // Only the step containing the BMI composite field has this set (seeded
-  // only on basic-info) — generalizes the old `step.id === "basic-info"` check.
-  const bmiAnchorFieldKey = step?.bmiInsertBeforeFieldKey;
-  const bmiAnchorPresent = !!bmiAnchorFieldKey && visibleFields.some((f) => f.id === bmiAnchorFieldKey);
+  const visibleFieldsFor = useCallback(
+    (s: StepDef): FieldDef[] =>
+      s.fields.filter((f) => (!f.visibleIf || f.visibleIf(answers)) && !isIdentityField(f.id)),
+    [answers],
+  );
 
   function handleFieldChange(id: string, value: string | string[]) {
     setAnswers((prev) => {
       const next = { ...prev, [id]: value };
-      // Generalizes the old chronic[]-only "None" mutual-exclusivity special
-      // case (ported from test-ui.html:1525-1536): selecting a checkbox-group
-      // option marked exclusiveValue clears every other selection, and vice
-      // versa. Only chronic[] has this set today (see seed_questionnaire.py).
+      // Selecting a checkbox-group option marked exclusiveValue (e.g. "None") clears
+      // every other selection, and vice versa. Only chronic[] has this set today.
       const exclusiveValue = allSteps?.flatMap((s) => s.fields).find((f) => f.id === id)?.exclusiveValue;
       if (exclusiveValue && Array.isArray(value)) {
         const prevValue = (prev[id] as string[] | undefined) ?? [];
@@ -155,21 +124,44 @@ export function AssessmentWizard({
     parseFloat((answers["height-cm"] as string) || "") >= 50 &&
     parseFloat((answers["weight-kg"] as string) || "") >= 10;
 
-  // The step holding the identity anchor can't be left until the mobile number is
-  // verified (and, for a fresh OTP sign-up, an email given) — the assessment is
-  // submitted to an authenticated endpoint, so collecting the rest of the answers
-  // first would only fail at the end with everything already typed in.
-  const showsIdentity = visibleFields.some((f) => f.id === IDENTITY_ANCHOR_FIELD);
+  // Per-section completeness, used for the progress bar, the "incomplete" markers,
+  // and to scroll to the first offending section on a failed submit.
+  const sectionState = useMemo(
+    () =>
+      steps.map((s) => {
+        const fields = visibleFieldsFor(s);
+        const required = fields.filter((f) => f.required);
+        const missing = required.filter((f) => !isAnswered(answers[f.id]));
+        const bmiIncomplete = !!s.bmiInsertBeforeFieldKey && !bmiValid;
+        return {
+          step: s,
+          fields,
+          missingCount: missing.length + (bmiIncomplete ? 1 : 0),
+          requiredCount: required.length + (s.bmiInsertBeforeFieldKey ? 1 : 0),
+        };
+      }),
+    [steps, answers, visibleFieldsFor, bmiValid],
+  );
 
-  const isStepValid = Boolean(step) && visibleFields
-    .filter((f) => f.required)
-    .every((f) => {
-      const v = answers[f.id];
-      return Array.isArray(v) ? v.length > 0 : !!v;
-    }) && (!bmiAnchorFieldKey || bmiValid) && (!showsIdentity || identityVerified);
+  const totalRequired = sectionState.reduce((n, s) => n + s.requiredCount, 0);
+  const totalMissing = sectionState.reduce((n, s) => n + s.missingCount, 0);
+  const progressPct =
+    totalRequired === 0 ? 0 : Math.round(((totalRequired - totalMissing) / totalRequired) * 100);
+  const isComplete = totalMissing === 0 && steps.length > 0;
 
-  const isLastStep = clampedIndex === steps.length - 1;
-  const progressPct = steps.length > 0 ? Math.round(((clampedIndex + 1) / steps.length) * 100) : 0;
+  function handleSubmit() {
+    if (!isComplete) {
+      setShowErrors(true);
+      const firstIncomplete = sectionState.find((s) => s.missingCount > 0);
+      if (firstIncomplete) {
+        const el = sectionRefs.current[firstIncomplete.step.id];
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      }
+      return;
+    }
+    onComplete(answers);
+  }
 
   if (schemaError) {
     return (
@@ -179,7 +171,26 @@ export function AssessmentWizard({
     );
   }
 
-  if (!allSteps || !step) {
+  // Gate: nothing else renders until the mobile number is verified.
+  if (!identityVerified) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        {banner}
+        <h1 className="mb-2 font-headline text-2xl font-bold text-foreground">
+          Verify your mobile number
+        </h1>
+        <p className="mb-6 text-sm text-muted-foreground">
+          We&apos;ll send you a one-time code. Your assessment and report are saved to this
+          number, so you can come back to them any time.
+        </p>
+        <div className="rounded-2xl border border-border bg-white p-8">
+          <PhoneVerification onVerifiedChange={handleVerifiedChange} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!allSteps || steps.length === 0) {
     return (
       <div className="mx-auto flex max-w-2xl justify-center px-6 py-24">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
@@ -190,89 +201,82 @@ export function AssessmentWizard({
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       {banner}
-      {/* Progress stays put and updates in place — only the step content below
-          animates, so the bar reads as continuous rather than re-entering. */}
-      <div className="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <span>
-          Step {clampedIndex + 1} of {steps.length}
-        </span>
-        <span>{progressPct}%</span>
-      </div>
-      <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-border">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
-      </div>
 
-      {/* Keyed on the step so it remounts and replays the entrance on every
-          navigation — but NOT on answer changes within a step (same id). Animates
-          transform + opacity only, so there's no layout shift; gated on
-          motion-safe so reduced-motion users get an instant swap. */}
-      <div
-        key={step.id}
-        className={cn(
-          "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:ease-out",
-          direction === 1
-            ? "motion-safe:slide-in-from-right-6"
-            : "motion-safe:slide-in-from-left-6",
-        )}
-      >
-        <h1 className="mb-6 font-headline text-2xl font-bold text-foreground">
-          <span aria-hidden>{step.icon}</span> {step.title}
-        </h1>
-
-        <div className="rounded-2xl border border-border bg-white p-8">
-          {visibleFields.map((field, index) => (
-          <div key={field.id}>
-            {/* BMI is a composite (height-cm + weight-kg) field not representable
-                as a single FieldDef — inserted right before the step's anchor
-                question (bmiInsertBeforeFieldKey, seeded as "occupation" on
-                basic-info). Falls back to rendering first in the step if that
-                question is missing (e.g. an admin deleted/renamed it), rather
-                than silently dropping BMI from the wizard entirely. */}
-            {bmiAnchorFieldKey && (bmiAnchorPresent ? field.id === bmiAnchorFieldKey : index === 0) && (
-              <BmiField answers={answers} onChange={(id, v) => handleFieldChange(id, v)} />
-            )}
-            <FieldRenderer field={field} answers={answers} onChange={handleFieldChange} />
-            {/* Directly below the name field, per the flow the client specified:
-                name, then verify the mobile, then email. */}
-            {field.id === IDENTITY_ANCHOR_FIELD && (
-              <PhoneVerification
-                name={(answers[IDENTITY_ANCHOR_FIELD] as string | undefined) ?? undefined}
-                onVerifiedChange={handleVerifiedChange}
-              />
-            )}
-          </div>
-        ))}
+      {/* Progress reflects required questions answered, not position on the page —
+          on a single page there is no "step 3 of 7" to report. Sticky so it stays
+          readable while scrolling a long form. */}
+      <div className="sticky top-0 z-10 -mx-6 mb-8 bg-background/95 px-6 py-3 backdrop-blur">
+        <div className="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span>Assessment</span>
+          <span>{progressPct}% complete</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-border">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => {
-            setDirection(-1);
-            setStepIndex((i) => Math.max(0, i - 1));
-          }}
-          disabled={clampedIndex === 0}
-        >
-          ← Back
-        </Button>
-        <Button
-          type="button"
-          variant={isLastStep ? "secondary" : "default"}
-          size="lg"
-          disabled={!isStepValid}
-          onClick={() => {
-            if (isLastStep) {
-              onComplete(answers);
-            } else {
-              setDirection(1);
-              setStepIndex((i) => i + 1);
-            }
-          }}
-        >
-          {isLastStep ? "Complete Assessment" : "Next Step →"}
+      <div className="flex flex-col gap-y-8">
+        {sectionState.map(({ step, fields, missingCount }) => {
+          const bmiAnchorFieldKey = step.bmiInsertBeforeFieldKey;
+          const bmiAnchorPresent =
+            !!bmiAnchorFieldKey && fields.some((f) => f.id === bmiAnchorFieldKey);
+
+          return (
+            <section
+              key={step.id}
+              ref={(el) => {
+                sectionRefs.current[step.id] = el;
+              }}
+              aria-labelledby={`section-${step.id}`}
+              className="scroll-mt-24"
+            >
+              <div className="mb-4 flex items-baseline justify-between gap-4 border-b border-border pb-2">
+                <h2
+                  id={`section-${step.id}`}
+                  className="font-headline text-xl font-bold text-foreground"
+                >
+                  <span aria-hidden>{step.icon}</span> {step.title}
+                </h2>
+                {showErrors && missingCount > 0 && (
+                  <span className="shrink-0 text-xs font-medium text-red-600">
+                    {missingCount} left
+                  </span>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-border bg-white p-8">
+                {fields.map((field, index) => (
+                  <div key={field.id}>
+                    {/* BMI is a composite (height + weight) not representable as a single
+                        FieldDef — inserted right before the section's anchor question
+                        (bmiInsertBeforeFieldKey, seeded as "occupation" on basic-info).
+                        Falls back to rendering first in the section if that question is
+                        missing (e.g. an admin deleted/renamed it), rather than silently
+                        dropping BMI from the form entirely. */}
+                    {bmiAnchorFieldKey &&
+                      (bmiAnchorPresent ? field.id === bmiAnchorFieldKey : index === 0) && (
+                        <BmiField answers={answers} onChange={handleFieldChange} />
+                      )}
+                    <FieldRenderer field={field} answers={answers} onChange={handleFieldChange} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="mt-10 flex flex-col items-end gap-2">
+        {showErrors && !isComplete && (
+          <p className="text-sm text-red-600">
+            {totalMissing} required question{totalMissing === 1 ? "" : "s"} still to answer.
+          </p>
+        )}
+        <Button type="button" variant="secondary" size="lg" onClick={handleSubmit}>
+          Complete Assessment
         </Button>
       </div>
     </div>
