@@ -64,8 +64,11 @@ export function MarketingFooter() {
 function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
   // Sage on hover — the same accent language as the nav, so "this is
   // interactive" reads identically at both ends of the page.
+  // py-1 gives each link a ~29px target with the list gap — comfortably over
+  // WCAG 2.2 AA's 24px minimum for inline links (2.5.8), which bare 21px text
+  // was sitting right on.
   const linkClass =
-    "inline-block border-b border-transparent text-sm text-muted-foreground transition-colors hover:border-b-accent hover:text-foreground";
+    "inline-block border-b border-transparent py-1 text-sm text-muted-foreground transition-colors hover:border-b-accent hover:text-foreground";
   return (
     <div>
       <h4 className="mb-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">

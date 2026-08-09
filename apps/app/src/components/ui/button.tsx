@@ -53,7 +53,14 @@ const buttonVariants = cva(
           "border-destructive/25 bg-destructive/10 text-destructive hover:bg-destructive/15",
         // Quiet text action — the reference HTML's `.link-quiet`. Square-ish so
         // the accent underline reads as an underline, not a pill edge.
-        link: "rounded-none border-0 border-b-[1.5px] border-b-accent px-0 py-0 text-foreground hover:border-b-primary",
+        //
+        // Opts out of the base `whitespace-nowrap` AND `shrink-0`: this variant
+        // carries whole sentences ("Don't have a report handy? Skip to the
+        // assessment"). Both are needed — dropping nowrap alone still left it
+        // 391px wide inside a 335px column on a phone, because shrink-0 pins a
+        // flex item at max-content. Pills keep both (a squashed pill looks
+        // broken); prose has to be allowed to wrap and to shrink.
+        link: "max-w-full shrink whitespace-normal rounded-none border-0 border-b-[1.5px] border-b-accent px-0 py-0 text-left text-foreground hover:border-b-primary",
       },
       size: {
         default: "min-h-12 px-[1.375rem] py-3.5 text-[0.9375rem]",
