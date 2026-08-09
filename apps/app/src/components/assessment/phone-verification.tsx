@@ -190,7 +190,7 @@ export function PhoneVerification({
             {stage === "enter-number" && (
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 className="shrink-0 px-4"
                 disabled={busy || mobile.replace(/\D/g, "").length < 10}
                 onClick={handleSendOtp}
@@ -295,7 +295,7 @@ export function PhoneVerification({
             />
             <Button
               type="button"
-              variant="secondary"
+              variant="default"
               className="shrink-0 px-5"
               disabled={savingEmail || !email.includes("@")}
               onClick={handleSaveEmail}

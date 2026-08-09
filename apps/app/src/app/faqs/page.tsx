@@ -38,13 +38,13 @@ export default function FaqsPage() {
       <MarketingNav />
       <main className="flex-1">
         <div className="mx-auto max-w-3xl px-6 py-16">
-          <h1 className="text-center font-headline text-3xl font-bold text-primary md:text-4xl">
+          <h1 className="text-center font-display text-3xl font-bold text-primary md:text-4xl">
             Frequently Asked Questions
           </h1>
           <div className="mt-10 space-y-4">
             {FAQS.map((item) => (
-              <div key={item.q} className="rounded-2xl border border-border bg-white p-6">
-                <h2 className="font-headline text-base font-semibold text-foreground">{item.q}</h2>
+              <div key={item.q} className="rounded-2xl border border-border bg-background p-6">
+                <h2 className="font-display text-base font-semibold text-foreground">{item.q}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
               </div>
             ))}

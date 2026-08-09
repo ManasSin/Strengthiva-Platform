@@ -122,8 +122,8 @@ export function LoginForm() {
 
   if (pendingVerificationEmail) {
     return (
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-white p-8 text-center">
-        <h1 className="font-headline text-xl font-bold text-foreground">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8 text-center">
+        <h1 className="font-display text-xl font-bold text-foreground">
           Check your email
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -159,8 +159,8 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-border bg-white p-8">
-      <h1 className="font-headline text-xl font-bold text-foreground">
+    <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8">
+      <h1 className="font-display text-xl font-bold text-foreground">
         {mode === "sign-up" ? "Create your account" : "Welcome back"}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">

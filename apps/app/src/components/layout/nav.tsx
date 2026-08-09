@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
+import { BrandMark } from "@/components/ui/botanical";
 import { UserMenu } from "@/components/layout/user-menu";
 import { StoreLink } from "@/components/layout/store-link";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,11 @@ import { cn } from "@/lib/utils";
 // text link and a "Start Assessment" button, which is two doors to the same room
 // — the CTA is now the single, unambiguous way in, and the nav links are the
 // other destinations.
+//
+// Restyled for the 2026-08 rebrand against docs/redesign/new design style 1.html
+// (`.nav`). Destinations are unchanged: the reference's labels ("How it works",
+// "Where we stand") are anchors into a one-page demo, whereas these are real
+// routes, and renaming them would break live links for nothing.
 type NavItem = { label: string; href?: string; store?: boolean };
 
 const NAV_ITEMS: NavItem[] = [
@@ -28,17 +34,22 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 /**
- * Every clickable nav item shares one pill so hover, active and focus read the
- * same everywhere. The focus-visible ring is the brand green (--ring) and clears
- * the translucent header via ring-offset.
+ * Every clickable nav item shares one treatment so hover, active and focus read
+ * the same everywhere.
+ *
+ * The sage underline is a deliberate accent moment (brand-spec.md rule 1): the
+ * accent marks *where you are* and *what you're about to click*, which is
+ * exactly the "key interactive highlight" the rule reserves it for. It is drawn
+ * as a border on a transparent baseline rather than toggled on, so nothing
+ * shifts by a pixel between rest and hover.
  */
 function navItemClass(active: boolean): string {
   return cn(
-    "rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "border-b-2 pb-0.5 text-[0.90625rem] font-medium transition-colors",
+    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
     active
-      ? "bg-primary/10 text-primary"
-      : "text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
+      ? "border-b-accent text-foreground"
+      : "border-b-transparent text-muted-foreground hover:border-b-accent hover:text-foreground",
   );
 }
 
@@ -66,16 +77,17 @@ export function MarketingNav() {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
+    <header className="sticky top-0 z-40 border-b border-hairline-soft bg-background/85 backdrop-blur-md">
+      <div className="mx-auto flex h-[4.375rem] max-w-measure items-center gap-7 px-5 sm:px-7">
         <Link
           href="/"
-          className="rounded-md font-headline text-xl font-bold text-primary transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex shrink-0 items-center gap-2.5 font-display text-[1.375rem] font-medium tracking-[-0.01em] text-foreground transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
+          <BrandMark className="size-[1.625rem] text-primary" />
           Strengthiva
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
           {NAV_ITEMS.map((item) =>
             item.store ? (
               <StoreLink key={item.label} className={navItemClass(false)}>
@@ -94,10 +106,19 @@ export function MarketingNav() {
           )}
         </nav>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        {/* ml-auto rather than `justify-between` on the bar: with three groups of
+            very different widths, space-between let the link row drift as labels
+            changed. Pinning the right cluster keeps the links locked beside the
+            wordmark at every breakpoint. */}
+        <div className="ml-auto flex items-center gap-3">
           <UserMenu />
-          <ButtonLink href="/assessment" variant="default" size="default" className="hidden md:inline-flex">
-            Start Assessment
+          <ButtonLink
+            href="/assessment"
+            variant="secondary"
+            size="sm"
+            className="hidden md:inline-flex"
+          >
+            Get started
           </ButtonLink>
           <button
             type="button"
@@ -105,7 +126,7 @@ export function MarketingNav() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            className="flex size-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background md:hidden"
+            className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -117,14 +138,18 @@ export function MarketingNav() {
           id="mobile-menu"
           aria-label="Primary"
           onClick={() => setMenuOpen(false)}
-          className="border-t border-border bg-background px-4 py-3 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-200 md:hidden"
+          className="border-t border-hairline-soft bg-background px-4 py-3 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-200 md:hidden"
         >
           <ul className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => {
               const active = isActive(item);
+              // Same accent language as the desktop rail, turned on its side: a
+              // sage left edge instead of a sage underline.
               const mobileClass = cn(
-                "block rounded-lg px-4 py-2.5 text-base font-medium transition-colors",
-                active ? "bg-primary/10 text-primary" : "text-foreground hover:bg-foreground/[0.04]",
+                "block border-l-2 px-4 py-2.5 text-base font-medium transition-colors",
+                active
+                  ? "border-l-accent bg-surface text-foreground"
+                  : "border-l-transparent text-foreground hover:border-l-accent hover:bg-surface",
               );
               return (
                 <li key={item.label}>
@@ -143,8 +168,8 @@ export function MarketingNav() {
               );
             })}
           </ul>
-          <ButtonLink href="/assessment" variant="default" size="lg" className="mt-3 w-full">
-            Start Assessment
+          <ButtonLink href="/assessment" variant="default" size="lg" className="mt-4 w-full">
+            Start the assessment
           </ButtonLink>
         </nav>
       )}

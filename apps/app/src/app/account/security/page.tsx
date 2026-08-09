@@ -238,7 +238,7 @@ export default function SecurityPage() {
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="default"
                   disabled={busy || !currentPassword || newPassword.length < 8}
                   onClick={changePassword}
                 >
@@ -254,7 +254,7 @@ export default function SecurityPage() {
       )}
 
       <section className="rounded-2xl border border-red-200 bg-red-50/50 p-6 md:p-8">
-        <h2 className="font-headline text-xl font-bold text-foreground">Delete account</h2>
+        <h2 className="font-display text-xl font-bold text-foreground">Delete account</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           This removes your account and everything we store about your health — your
           assessments, reports and any uploaded prescriptions. It cannot be undone.
@@ -283,7 +283,7 @@ export default function SecurityPage() {
             <div className="mt-3 flex gap-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 disabled={busy || deleteConfirm !== "DELETE"}
                 onClick={deleteAccount}
               >

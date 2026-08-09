@@ -35,7 +35,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="border-b bg-white px-6 py-4 flex items-center gap-6">
+      <nav className="border-b bg-background px-6 py-4 flex items-center gap-6">
         <span className="font-semibold">Strengthiva Admin</span>
         <Link href="/admin/knowledge-base" className="text-sm text-gray-600 hover:text-gray-900">
           Knowledge Base

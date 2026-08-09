@@ -2,6 +2,84 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/*
+  ============================================================================
+  Strengthiva design tokens — the 2026-08 rebrand.
+  ============================================================================
+
+  The same system as app.strengthiva.com (see
+  apps/app/src/app/globals.css, which carries the full rationale and the list
+  of deliberate divergences from the Nexura guide). Kept in step by hand: the
+  two apps are on different Tailwind majors — this one is v3 with the Medusa UI
+  preset, the app is v4 with CSS-first `@theme` — so there is no shared config
+  file to import. If you change a value here, change it there too.
+
+  Written as space-separated RGB channels rather than hex so Tailwind v3's
+  `<alpha-value>` slot works: that's what makes `bg-primary/10` and
+  `text-forest/70` resolve instead of silently producing nothing. Hand-written
+  CSS in this file reaches them as `rgb(var(--token))`.
+
+  Source of truth for the values: docs/redesign/brand-spec.md and
+  docs/redesign/Nexura-design-guide-colors-updated.md.
+*/
+:root {
+  --brand-bg: 255 255 255;         /* #FFFFFF  page                        */
+  --brand-surface: 244 247 245;    /* #F4F7F5  soft sage tint              */
+  --brand-surface-2: 235 240 236;  /* #EBF0EC  one step down               */
+  --brand-fg: 21 32 26;            /* #15201A  deep forest pine            */
+  --brand-muted: 104 115 108;      /* #68736C  4.9:1 on white ✓            */
+  --brand-sage: 168 198 178;       /* #A8C6B2  THE accent                  */
+  --brand-sage-hover: 147 182 161; /* #93B6A1                              */
+  --brand-sage-soft: 216 229 221;  /* #D8E5DD  accent at rest              */
+  --brand-primary: 12 107 54;      /* #0C6B36                              */
+  --brand-secondary: 254 107 1;    /* #FE6B01                              */
+  --brand-tertiary: 255 248 242;   /* #FFF8F2                              */
+  --brand-neutral: 10 79 40;       /* #0A4F28                              */
+  --brand-danger: 154 90 69;       /* #9A5A45                              */
+
+  /* The hairline border system (brand-spec rule 4) is the foreground colour at
+     12% — expressed as a ready-made rgba because it is always used at that one
+     opacity, and as channels so `border-hairline/50` still works if needed. */
+  --brand-hairline: 21 32 26;
+
+  /* Soft, diffused elevation only — never a hard drop shadow. */
+  --brand-shadow-hairline: 0 1px 2px rgba(21, 32, 26, 0.05);
+  --brand-shadow-soft: 0 8px 30px -12px rgba(21, 32, 26, 0.14);
+  --brand-shadow-lifted: 0 26px 60px -24px rgba(21, 32, 26, 0.22);
+}
+
+@layer base {
+  body {
+    background-color: rgb(var(--brand-bg));
+    color: rgb(var(--brand-fg));
+    font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+
+  /* Display face at weight 400 with negative tracking — brand-spec rule 3.
+     Medusa's preset ships its own heading sizes; this only takes over the
+     family, weight and tracking so those sizes still apply. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-newsreader), Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: rgb(var(--brand-sage));
+    color: rgb(var(--brand-fg));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand-primary));
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {

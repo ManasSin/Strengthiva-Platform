@@ -15,7 +15,7 @@ export default function SamplePlanPage() {
           <span className="mx-auto block w-fit rounded-full bg-secondary/10 px-4 py-1.5 text-sm font-medium text-secondary">
             Sample Plan — Illustrative Only
           </span>
-          <h1 className="mt-4 text-center font-headline text-3xl font-bold text-foreground">
+          <h1 className="mt-4 text-center font-display text-3xl font-bold text-foreground">
             Here&apos;s What Your Path to Vitality Looks Like
           </h1>
           <p className="mt-2 text-center text-muted-foreground">
@@ -25,16 +25,16 @@ export default function SamplePlanPage() {
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-6 text-white">
-              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
+              <span className="rounded-full bg-background/20 px-3 py-1 text-xs font-medium">
                 Ayurvedic Constitution
               </span>
-              <h2 className="mt-4 font-headline text-2xl font-bold">Pitta-Vata</h2>
+              <h2 className="mt-4 font-display text-2xl font-bold">Pitta-Vata</h2>
               <p className="mt-3 text-sm text-white/90">
                 A dual constitution — dominant Pitta (fire/metabolism) with a Vata
                 (air/movement) secondary influence, prone to stress-driven energy dips.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-white p-6">
+            <div className="rounded-2xl border border-border bg-background p-6">
               <h3 className="text-sm font-semibold text-foreground">Summary</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Priya, managing your reported fatigue and occasional stress is the primary
@@ -44,8 +44,8 @@ export default function SamplePlanPage() {
             </div>
           </div>
 
-          <section className="mt-10 rounded-2xl border border-border bg-white p-6">
-            <h2 className="font-headline text-lg font-bold text-foreground">Daily Diet Plan</h2>
+          <section className="mt-10 rounded-2xl border border-border bg-background p-6">
+            <h2 className="font-display text-lg font-bold text-foreground">Daily Diet Plan</h2>
             <div className="mt-4 space-y-3 text-sm leading-relaxed text-foreground">
               <p><strong>Early Morning:</strong> Warm water with lemon, soaked almonds (5)</p>
               <p><strong>Breakfast:</strong> Moong dal chilla with mint chutney, herbal tea</p>
@@ -56,11 +56,11 @@ export default function SamplePlanPage() {
           </section>
 
           <section className="mt-10">
-            <h2 className="font-headline text-lg font-bold text-foreground">
+            <h2 className="font-display text-lg font-bold text-foreground">
               <span className="text-secondary">Therapeutic</span> Recommendations
             </h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="relative rounded-xl border border-border bg-white p-5">
+              <div className="relative rounded-xl border border-border bg-background p-5">
                 <span className="absolute right-4 top-4 rounded bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-800">
                   In Stock
                 </span>
@@ -77,7 +77,7 @@ export default function SamplePlanPage() {
                   </span>
                 </div>
               </div>
-              <div className="relative rounded-xl border border-border bg-white p-5">
+              <div className="relative rounded-xl border border-border bg-background p-5">
                 <span className="absolute right-4 top-4 rounded bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-800">
                   In Stock
                 </span>
@@ -95,11 +95,11 @@ export default function SamplePlanPage() {
           </section>
 
           <div className="mt-12 rounded-3xl bg-gradient-to-br from-primary to-primary/80 px-8 py-12 text-center text-white">
-            <h2 className="font-headline text-2xl font-bold">Ready to see your own plan?</h2>
+            <h2 className="font-display text-2xl font-bold">Ready to see your own plan?</h2>
             <p className="mx-auto mt-3 max-w-xl text-white/90">
               Take the real assessment — it takes about 5 minutes.
             </p>
-            <ButtonLink href="/assessment" variant="secondary" size="lg" className="mt-6">
+            <ButtonLink href="/assessment" variant="default" size="lg" className="mt-6">
               Start Your Free Assessment
             </ButtonLink>
           </div>
