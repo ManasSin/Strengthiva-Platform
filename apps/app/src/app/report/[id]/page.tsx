@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/ui/markdown";
 import { Eyebrow } from "@/components/ui/label";
 import { parseDoshaHero } from "@/lib/dosha";
+import { parseDietPlan } from "@/lib/diet";
 import { cn } from "@/lib/utils";
 import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
 
@@ -222,9 +223,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
         {/* ── 02 Direction ─────────────────────────────────────────────────── */}
         <PlanSection n="02" title="Direction — here's your diet" tag="A day, built around your reading">
-          <div className="rounded-lg border border-border bg-background p-6">
-            <Markdown className="text-[0.96875rem] leading-relaxed">{report.diet}</Markdown>
-          </div>
+          <DietPlan markdown={report.diet} />
         </PlanSection>
 
         {/* ── 03 Support ───────────────────────────────────────────────────── */}
@@ -310,6 +309,51 @@ function PlanSection({
       </div>
       {children}
     </section>
+  );
+}
+
+/**
+ * The diet as the labelled grid from the reference, when the markdown parses
+ * into slots — and as the plain markdown panel when it doesn't.
+ *
+ * The fallback is the point. `report.diet` is LLM output against a prompt, not
+ * a schema, so a run that ignores the format must still render a readable plan
+ * rather than an empty or half-filled grid. See lib/diet.ts.
+ */
+function DietPlan({ markdown }: { markdown: string }) {
+  const parsed = parseDietPlan(markdown);
+
+  if (!parsed) {
+    return (
+      <div className="rounded-lg border border-border bg-background p-6">
+        <Markdown className="text-[0.96875rem] leading-relaxed">{markdown}</Markdown>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* 1px gaps over a hairline background give the cell seams without doubled
+          borders — the same technique as the landing page's sample-plan grid. */}
+      <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-hairline-soft sm:grid-cols-2 lg:grid-cols-3">
+        {parsed.slots.map((slot) => (
+          <div key={slot.label} className="bg-background p-5">
+            <div className="mb-3 font-mono text-label uppercase text-primary">{slot.label}</div>
+            <ul className="space-y-2">
+              {slot.items.map((item, i) => (
+                <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
+                  <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-accent" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      {parsed.note && (
+        <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted-foreground">{parsed.note}</p>
+      )}
+    </>
   );
 }
 
