@@ -250,6 +250,11 @@ export type ReportResponse = {
   dosha: string;
   diet: string;
   products: ResolvedProduct[];
+  // Set when products were deliberately withheld for a clinical reason (under-18,
+  // pregnancy, lactation). When present, `products` is always empty and this message
+  // must be shown in their place — an unexplained empty list reads as "nothing suits
+  // you", which is a different and misleading claim.
+  product_disclaimer: string | null;
   created_at: string;
 };
 

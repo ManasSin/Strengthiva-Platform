@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import Link from "next/link";
 import { MarketingNav } from "@/components/layout/nav";
 import { MarketingFooter } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -134,14 +135,30 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             <h2 className="font-headline text-lg font-bold text-foreground">
               <span className="text-secondary">Therapeutic</span> Recommendations
             </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {report.products.map((product, i) => (
-                <ProductCard key={`${product.name}-${i}`} product={product} />
-              ))}
-              {report.products.length === 0 && (
-                <p className="text-sm italic text-muted-foreground">No product recommendations for this report.</p>
-              )}
-            </div>
+            {/* Products withheld for a clinical reason (under-18, pregnancy, lactation).
+                Rendered INSTEAD of the product grid, never alongside it — and never as
+                the plain "no recommendations" line below, which would read as "nothing
+                suits you" rather than "we're deliberately not advising here". */}
+            {report.product_disclaimer ? (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+                <p className="text-sm text-amber-900">{report.product_disclaimer}</p>
+                <Link
+                  href="/contact"
+                  className="mt-3 inline-block text-sm font-medium text-amber-900 underline"
+                >
+                  Book a call with us
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {report.products.map((product, i) => (
+                  <ProductCard key={`${product.name}-${i}`} product={product} />
+                ))}
+                {report.products.length === 0 && (
+                  <p className="text-sm italic text-muted-foreground">No product recommendations for this report.</p>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </main>
