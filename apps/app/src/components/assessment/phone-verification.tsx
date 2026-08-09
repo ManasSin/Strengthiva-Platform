@@ -166,14 +166,14 @@ export function PhoneVerification({
         <>
           <label htmlFor="mobile" className="mb-2 block text-base font-medium text-foreground">
             Mobile Number
-            <span className="ml-1 text-secondary">*</span>
+            <span className="ml-1 text-destructive" aria-hidden>*</span>
           </label>
           <p className="mb-2.5 text-sm text-muted-foreground">
             We&apos;ll text you a 6-digit code. This is how you sign in to Strengthiva.
           </p>
 
           <div className="flex gap-2">
-            <span className="inline-flex items-center rounded-lg border border-border bg-tertiary/40 px-3 text-base text-muted-foreground">
+            <span className="inline-flex items-center rounded-lg border border-border bg-surface px-3 text-base text-muted-foreground">
               +91
             </span>
             <input
@@ -185,7 +185,7 @@ export function PhoneVerification({
               disabled={stage === "enter-code"}
               placeholder="10-digit mobile number"
               onChange={(e) => setMobile(e.target.value)}
-              className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none disabled:bg-tertiary/30 disabled:text-muted-foreground"
+              className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none disabled:bg-surface disabled:text-muted-foreground"
             />
             {stage === "enter-number" && (
               <Button
@@ -278,7 +278,7 @@ export function PhoneVerification({
         <div className="mt-6">
           <label htmlFor="email" className="mb-2 block text-base font-medium text-foreground">
             Email Address
-            <span className="ml-1 text-secondary">*</span>
+            <span className="ml-1 text-destructive" aria-hidden>*</span>
           </label>
           <p className="mb-2.5 text-sm text-muted-foreground">
             Where we&apos;ll send your report. We&apos;ll say hello too.

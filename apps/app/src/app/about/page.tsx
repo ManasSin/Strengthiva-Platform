@@ -49,9 +49,9 @@ function AboutHero() {
       <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
         About Strengthiva
       </span>
-      <h1 className="mt-6 font-display text-4xl font-bold leading-tight text-foreground md:text-5xl">
+      <h1 className="mt-6 text-[clamp(2.25rem,5vw,3.5rem)]">
         A doctor, a diagnosis,{" "}
-        <span className="text-secondary">then the medicine.</span>
+        <em className="italic text-primary">then the medicine.</em>
       </h1>
       <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
         Most Ayurvedic products are sold off a shelf — the same herb to everyone, whatever
@@ -64,9 +64,9 @@ function AboutHero() {
 
 function ThePosition() {
   return (
-    <section className="border-y border-border bg-tertiary/30 py-16 md:py-20">
+    <section className="border-y border-border bg-surface py-16 md:py-20">
       <div className="mx-auto max-w-4xl px-6">
-        <h2 className="font-display text-3xl font-bold text-primary">
+        <h2 className="text-[clamp(1.875rem,4vw,2.5rem)]">
           The view we&apos;re built on
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-foreground">
@@ -116,7 +116,7 @@ function Differentiators() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
       <div className="max-w-2xl">
-        <h2 className="font-display text-3xl font-bold text-foreground">
+        <h2 className="text-[clamp(1.875rem,4vw,2.5rem)]">
           What makes Strengthiva different
         </h2>
         <p className="mt-4 text-muted-foreground">
@@ -131,8 +131,8 @@ function Differentiators() {
             key={item.title}
             className={
               item.lead
-                ? "rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-7 text-white md:col-span-2"
-                : "rounded-2xl border border-border bg-background p-7"
+                ? "rounded-lg bg-forest p-7 text-white md:col-span-2"
+                : "rounded-lg border border-border bg-background p-7"
             }
           >
             {item.lead && (
@@ -141,7 +141,7 @@ function Differentiators() {
               </span>
             )}
             <h3
-              className={`font-display text-xl font-bold ${item.lead ? "mt-4" : ""} ${
+              className={`text-subhead ${item.lead ? "mt-4" : ""} ${
                 item.lead ? "text-white" : "text-foreground"
               }`}
             >
@@ -163,19 +163,19 @@ function Differentiators() {
 
 function TheFounder() {
   return (
-    <section className="border-y border-border bg-tertiary/30 py-16 md:py-20">
+    <section className="border-y border-border bg-surface py-16 md:py-20">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[2fr_3fr] md:items-center">
         <div>
           {/* Placeholder for Dr. Dheeraj's portrait — the deck's content model puts him
               at the centre of the brand (slide 25, the founder content engine), so this
               is the single highest-value image asset to source. */}
-          <div className="aspect-[4/5] w-full rounded-3xl bg-gradient-to-br from-primary to-primary/70" />
+          <div className="aspect-[4/5] w-full rounded-xl bg-forest" />
         </div>
         <div>
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             The practice behind the products
           </div>
-          <h2 className="mt-3 font-display text-3xl font-bold text-foreground">
+          <h2 className="mt-3 text-[clamp(1.875rem,4vw,2.5rem)]">
             Dr. Dheeraj
           </h2>
           <p className="mt-2 text-sm font-medium text-primary">
@@ -220,7 +220,7 @@ function HowItWorks() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
       <div className="max-w-2xl">
-        <h2 className="font-display text-3xl font-bold text-foreground">
+        <h2 className="text-[clamp(1.875rem,4vw,2.5rem)]">
           How the assessment works
         </h2>
         <p className="mt-4 text-muted-foreground">
@@ -231,11 +231,11 @@ function HowItWorks() {
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         {steps.map((step) => (
-          <div key={step.step} className="rounded-2xl border border-border bg-background p-7">
-            <div className="font-display text-3xl font-bold text-secondary">
+          <div key={step.step} className="rounded-lg border border-border bg-background p-7">
+            <div className="font-display text-3xl text-primary">
               {step.step}
             </div>
-            <h3 className="mt-3 font-display text-lg font-semibold text-foreground">
+            <h3 className="mt-3 text-subhead text-foreground">
               {step.title}
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -272,7 +272,7 @@ function WhatWeWontSay() {
     <section className="border-t border-border bg-primary py-16 text-white md:py-20">
       <div className="mx-auto max-w-6xl px-6">
         <div className="max-w-2xl">
-          <h2 className="font-display text-3xl font-bold">What we won&apos;t tell you</h2>
+          <h2 className="text-[clamp(1.875rem,4vw,2.5rem)]">What we won&apos;t tell you</h2>
           <p className="mt-4 text-white/80">
             A brand willing to name a limit earns belief on everything else. In a category
             built on overclaiming, this is the shortest route to being worth trusting.
@@ -280,8 +280,8 @@ function WhatWeWontSay() {
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           {promises.map((promise) => (
-            <div key={promise.title} className="rounded-2xl bg-background/10 p-6">
-              <h3 className="font-display text-lg font-semibold">{promise.title}</h3>
+            <div key={promise.title} className="rounded-lg bg-background/10 p-6">
+              <h3 className="text-subhead">{promise.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-white/85">{promise.body}</p>
             </div>
           ))}
@@ -294,7 +294,7 @@ function WhatWeWontSay() {
 function ClosingCta() {
   return (
     <section className="mx-auto max-w-4xl px-6 py-16 text-center md:py-20">
-      <h2 className="font-display text-3xl font-bold text-foreground">
+      <h2 className="text-[clamp(1.875rem,4vw,2.5rem)]">
         Find what your body actually needs
       </h2>
       <p className="mx-auto mt-4 max-w-xl text-muted-foreground">

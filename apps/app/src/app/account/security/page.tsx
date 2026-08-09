@@ -253,8 +253,8 @@ export default function SecurityPage() {
         </AccountCard>
       )}
 
-      <section className="rounded-2xl border border-red-200 bg-red-50/50 p-6 md:p-8">
-        <h2 className="font-display text-xl font-bold text-foreground">Delete account</h2>
+      <section className="rounded-lg border border-red-200 bg-red-50/50 p-6 md:p-8">
+        <h2 className="text-subhead text-foreground">Delete account</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           This removes your account and everything we store about your health — your
           assessments, reports and any uploaded prescriptions. It cannot be undone.

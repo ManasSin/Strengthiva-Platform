@@ -24,7 +24,7 @@ export default async function AccountLayout({
       <MarketingNav />
       <main className="flex-1 bg-tertiary/20">
         <div className="mx-auto max-w-5xl px-6 py-12">
-          <h1 className="font-display text-3xl font-bold text-foreground">Your account</h1>
+          <h1 className="text-[clamp(1.875rem,4vw,2.5rem)]">Your account</h1>
           <p className="mt-2 text-muted-foreground">
             Signed in as {session.user.email}
           </p>
