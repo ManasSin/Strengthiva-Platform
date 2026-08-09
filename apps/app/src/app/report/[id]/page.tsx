@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/ui/markdown";
 import { Eyebrow } from "@/components/ui/label";
 import { parseDoshaHero } from "@/lib/dosha";
+import { cn } from "@/lib/utils";
 import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
 
 // Output / plan page — the flow's step 3.
@@ -113,6 +114,11 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   }
 
   const hero = parseDoshaHero(report.dosha);
+  // "A mix" means more than one dosha, or one that isn't simply the constitution
+  // name repeated back ("Vata" / ["Vata"]).
+  const hasMix =
+    hero.components.length > 1 ||
+    (hero.components.length === 1 && !hero.name.includes(hero.components[0]));
   const purchasable = report.products.filter((p) => p.resolution.status === "resolved");
   const total = purchasable.reduce(
     (sum, p) => sum + (p.resolution.status === "resolved" ? (p.resolution.price ?? 0) : 0),
@@ -162,12 +168,27 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             its component doshas are real fields on this response — there is no
             "main concern" or "goal" — so it's two cards over the same wide
             box rather than a third card padded with something invented. */}
+        {/* The mix card only earns its place on a dual/tri-doshic reading. On a
+            single-dosha result `hero.components` is just [hero.name], so it
+            rendered "Your constitution: Vata" beside "What's in the mix: Vata"
+            — two cards saying the same word. Below that threshold the doshas
+            ride along as badges inside the constitution card instead. */}
         <PlanSection n="01" title="Understanding — here's you">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className={cn("grid gap-4", hasMix && "md:grid-cols-2")}>
             <UnderstandingCard k="Your constitution" v={hero.name}>
               {hero.blurb}
+              {!hasMix && hero.components.length > 0 && (
+                <span className="mt-3 flex flex-wrap gap-1.5">
+                  {hero.components.map((c) => (
+                    <Badge key={c} variant="accent" size="sm">
+                      <DoshaGlyph component={c} />
+                      {c}
+                    </Badge>
+                  ))}
+                </span>
+              )}
             </UnderstandingCard>
-            {hero.components.length > 0 && (
+            {hasMix && (
               <UnderstandingCard k="What's in the mix" v={hero.components.join(" · ")}>
                 <span className="flex flex-wrap gap-1.5">
                   {hero.components.map((c) => (
