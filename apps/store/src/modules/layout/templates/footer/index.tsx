@@ -1,5 +1,6 @@
 import { listCategories } from "@lib/data/categories";
 import { listCollections } from "@lib/data/collections";
+import { getAppURL } from "@lib/util/env";
 import { Text, clx } from "@modules/common/components/ui";
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
@@ -9,6 +10,7 @@ export default async function Footer() {
     fields: "*products",
   });
   const productCategories = await listCategories();
+  const appUrl = getAppURL();
 
   return (
     <footer className="border-t border-grey-20 bg-tertiary/40 w-full">
@@ -111,12 +113,12 @@ export default async function Footer() {
               <span className="txt-small-plus text-brandneutral">Strengthiva</span>
               <ul className="grid grid-cols-1 gap-y-2 text-grey-60 txt-small">
                 <li>
-                  <a href="http://localhost:3000" className="hover:text-primary">
+                  <a href={appUrl} className="hover:text-primary">
                     Health Assessment
                   </a>
                 </li>
                 <li>
-                  <a href="http://localhost:3000/diet-plans" className="hover:text-primary">
+                  <a href={`${appUrl}/diet-plans`} className="hover:text-primary">
                     Diet Plans
                   </a>
                 </li>
