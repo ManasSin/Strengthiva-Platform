@@ -23,7 +23,7 @@ const LoginTemplate = () => {
         <Heading level="h1" className="txt-large-plus">
           One account, everywhere
         </Heading>
-        <Text className="mt-2 text-grey-60">
+        <Text className="mt-2 text-muted">
           Your Strengthiva account works across the assessment app and the store.
           Sign in once on app.strengthiva.com.
         </Text>

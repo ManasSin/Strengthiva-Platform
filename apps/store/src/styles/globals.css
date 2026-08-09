@@ -48,6 +48,65 @@
   --brand-shadow-lifted: 0 26px 60px -24px rgba(21, 32, 26, 0.22);
 }
 
+/*
+  Medusa UI preset remap.
+  ----------------------
+  The storefront's templates are Medusa's, and they paint with the preset's own
+  semantic utilities — `text-ui-fg-base`, `bg-ui-bg-subtle`, `border-ui-border-base`
+  and friends, ~200 usages across 65 files. Those utilities all resolve through
+  the CSS custom properties below, which the preset seeds with its stock zinc
+  ramp (`rgba(24, 24, 27, 1)` and so on).
+
+  Rebinding the variables here re-skins every one of those call sites at once.
+  The alternative was rewriting 65 template files to swap class names, which
+  would have been a far larger diff, would fight every future Medusa upgrade,
+  and would leave any missed file visibly stock.
+
+  Declared after the preset's own block and at equal-or-greater specificity so
+  it wins the cascade. Values are `rgba()` strings because that is the format
+  the preset's utilities expect — not the space-separated channels the brand
+  tokens above use.
+*/
+:root,
+[data-mode="light"] {
+  --fg-base: rgba(21, 32, 26, 1); /* forest */
+  --fg-subtle: rgba(104, 115, 108, 1); /* muted, 4.9:1 on white */
+  --fg-muted: rgba(104, 115, 108, 0.78);
+  --fg-disabled: rgba(104, 115, 108, 0.45);
+  --fg-interactive: rgba(12, 107, 54, 1); /* primary green */
+  --fg-interactive-hover: rgba(10, 79, 40, 1); /* neutral */
+  --fg-error: rgba(154, 90, 69, 1); /* danger clay */
+  --fg-on-color: rgba(255, 255, 255, 1);
+  --fg-on-inverted: rgba(255, 255, 255, 1);
+
+  --bg-base: rgba(255, 255, 255, 1);
+  --bg-base-hover: rgba(244, 247, 245, 1); /* surface */
+  --bg-base-pressed: rgba(235, 240, 236, 1); /* surface-2 */
+  --bg-subtle: rgba(244, 247, 245, 1);
+  --bg-subtle-hover: rgba(235, 240, 236, 1);
+  --bg-subtle-pressed: rgba(235, 240, 236, 1);
+  --bg-component: rgba(244, 247, 245, 1);
+  --bg-component-hover: rgba(235, 240, 236, 1);
+  --bg-component-pressed: rgba(235, 240, 236, 1);
+  --bg-field: rgba(255, 255, 255, 1);
+  --bg-field-hover: rgba(244, 247, 245, 1);
+  --bg-field-component: rgba(255, 255, 255, 1);
+  --bg-field-component-hover: rgba(244, 247, 245, 1);
+  --bg-highlight: rgba(168, 198, 178, 0.22); /* the sage accent, as a wash */
+  --bg-highlight-hover: rgba(168, 198, 178, 0.3);
+  --bg-interactive: rgba(12, 107, 54, 1);
+  --bg-disabled: rgba(244, 247, 245, 1);
+  --bg-overlay: rgba(21, 32, 26, 0.4);
+
+  --border-base: rgba(21, 32, 26, 0.12); /* the hairline system */
+  --border-strong: rgba(21, 32, 26, 0.2);
+  --border-interactive: rgba(12, 107, 54, 1);
+  --border-error: rgba(154, 90, 69, 1);
+  --border-danger: rgba(154, 90, 69, 1);
+  --border-menu-top: rgba(21, 32, 26, 0.08);
+  --border-menu-bot: rgba(21, 32, 26, 0.12);
+}
+
 @layer base {
   body {
     background-color: rgb(var(--brand-bg));

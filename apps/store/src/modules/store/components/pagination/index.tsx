@@ -35,7 +35,7 @@ export function Pagination({
   ) => (
     <button
       key={p}
-      className={clx("txt-xlarge-plus text-grey-40", {
+      className={clx("txt-xlarge-plus text-muted", {
         "text-primary font-semibold": isCurrent,
       })}
       disabled={isCurrent}

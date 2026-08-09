@@ -77,7 +77,7 @@ const SideMenu = (_props: SideMenuProps) => {
                           <li key={name}>
                             <LocalizedClientLink
                               href={href}
-                              className="font-headline text-3xl leading-10 hover:text-secondary"
+                              className="font-display text-3xl leading-10 hover:text-secondary"
                               onClick={close}
                               data-testid={`${name.toLowerCase()}-link`}
                             >

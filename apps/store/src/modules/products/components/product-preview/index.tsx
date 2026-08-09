@@ -31,7 +31,7 @@ export default async function ProductPreview({
     <LocalizedClientLink href={`/products/${product.handle}`} className="group">
       <div
         data-testid="product-wrapper"
-        className="rounded-2xl border border-grey-20 bg-white p-3 transition-colors group-hover:border-primary/40"
+        className="rounded-md border border-hairline bg-bg p-3 transition-colors group-hover:border-primary/40"
       >
         <Thumbnail
           thumbnail={product.thumbnail}
@@ -40,7 +40,7 @@ export default async function ProductPreview({
           isFeatured={isFeatured}
         />
         <div className="flex txt-compact-medium mt-4 justify-between">
-          <Text className="text-brandneutral font-medium" data-testid="product-title">
+          <Text className="text-forest font-medium" data-testid="product-title">
             {product.title}
           </Text>
           <div className="flex items-center gap-x-2">
