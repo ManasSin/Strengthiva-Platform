@@ -9,3 +9,9 @@ build/
 *.log
 .DS_Store
 .medusa/
+
+# TypeScript incremental-build cache. Rewritten on every `pnpm build`, so a
+# tracked copy shows up as a modified file after any build and lands noise in
+# every diff. apps/app already ignored it locally; this covers the workspace so
+# apps/store (which has no .gitignore of its own) is caught too.
+*.tsbuildinfo
