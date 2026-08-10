@@ -9,6 +9,7 @@ import { api, ApiError } from "@/lib/api-client";
 import { FieldRenderer } from "./field-renderer";
 import { BmiField } from "./bmi-field";
 import { PhoneVerification } from "./phone-verification";
+import { PhotoUpload } from "./photo-upload";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,7 @@ export function AssessmentWizard({
   initialAnswers,
   banner,
 }: {
-  onComplete: (answers: Answers) => void;
+  onComplete: (answers: Answers, photoKey: string | null) => void;
   initialAnswers?: Answers;
   banner?: ReactNode;
 }) {
@@ -80,6 +81,14 @@ export function AssessmentWizard({
   // covered in red.
   const [showErrors, setShowErrors] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [photoKey, setPhotoKey] = useState<string | null>(null);
+  // Which sections have already been checkpointed, so a save fires once per section
+  // rather than on every keystroke inside it.
+  const savedStepsRef = useRef<Set<string>>(new Set());
+  const [resumedFrom, setResumedFrom] = useState<string | null>(null);
+  // Answers must not be persisted until the saved draft has been read back, or an empty
+  // initial state would overwrite the very progress we are about to restore.
+  const draftLoadedRef = useRef(false);
 
   // Stable identity so PhoneVerification's reporting effect doesn't re-fire on
   // every render.
@@ -104,6 +113,37 @@ export function AssessmentWizard({
         setSchemaError(err instanceof ApiError ? err.message : "Failed to load the assessment."),
       );
   }, []);
+
+  // Restore an in-flight assessment. Runs only once verified, because the draft belongs
+  // to the authenticated user and the request would 401 before the OTP gate is passed.
+  useEffect(() => {
+    if (!identityVerified || draftLoadedRef.current) return;
+    let cancelled = false;
+    api
+      .getAssessmentDraft()
+      .then((draft) => {
+        if (cancelled) return;
+        if (draft && Object.keys(draft.answers ?? {}).length > 0) {
+          // Merge under, not over: anything already typed in this session wins over the
+          // stored copy, so restoring can never clobber the current tab's work.
+          setAnswers((current) => ({ ...draft.answers, ...current }));
+          if (draft.last_completed_step) {
+            savedStepsRef.current = new Set([draft.last_completed_step]);
+            setResumedFrom(draft.last_completed_step);
+          }
+        }
+      })
+      .catch(() => {
+        // A draft that won't load is not worth blocking on — the user simply starts
+        // fresh rather than seeing an error about a feature they never asked for.
+      })
+      .finally(() => {
+        if (!cancelled) draftLoadedRef.current = true;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [identityVerified]);
 
   // Recomputed on every answer change — this is what makes sections appear and
   // disappear as chronic conditions are ticked.
@@ -163,6 +203,40 @@ export function AssessmentWizard({
     totalRequired === 0 ? 0 : Math.round(((totalRequired - totalMissing) / totalRequired) * 100);
   const isComplete = totalMissing === 0 && steps.length > 0;
 
+  // ── Checkpoints ────────────────────────────────────────────────────────────
+  // A section becoming complete IS the checkpoint. Saving on that transition rather
+  // than on every keystroke means one request per section instead of one per character,
+  // and the saved state is always a coherent boundary the user can be returned to.
+  //
+  // The furthest complete section is the high-water mark: sections can become
+  // incomplete again when a chronic condition is ticked and inserts new ones, and
+  // progress should not appear to go backwards because the form grew.
+  useEffect(() => {
+    if (!identityVerified || !draftLoadedRef.current || steps.length === 0) return;
+
+    const newlyComplete = sectionState.filter(
+      (s) => s.requiredCount > 0 && s.missingCount === 0 && !savedStepsRef.current.has(s.step.id),
+    );
+    if (newlyComplete.length === 0) return;
+
+    newlyComplete.forEach((s) => savedStepsRef.current.add(s.step.id));
+
+    // Furthest along in the CURRENT section order — the client is the only party that
+    // knows that order, which is why the server stores this value without interpreting it.
+    const furthest = [...sectionState]
+      .reverse()
+      .find((s) => savedStepsRef.current.has(s.step.id));
+
+    api
+      .saveAssessmentDraft(answers, furthest?.step.id ?? null)
+      .catch(() => {
+        // Best-effort. A failed checkpoint must never interrupt someone mid-form; they
+        // simply resume from an earlier point if they leave now. Re-armed so the next
+        // completed section tries again.
+        newlyComplete.forEach((s) => savedStepsRef.current.delete(s.step.id));
+      });
+  }, [sectionState, answers, identityVerified, steps.length]);
+
   function handleSubmit() {
     if (!isComplete) {
       setShowErrors(true);
@@ -174,7 +248,7 @@ export function AssessmentWizard({
       }
       return;
     }
-    onComplete(answers);
+    onComplete(answers, photoKey);
   }
 
   // Every branch below returns bare content — the page shell (nav, sage surface,
@@ -269,6 +343,12 @@ export function AssessmentWizard({
           {/* Progress reflects required questions answered, not position on the
               page — on a single page there is no "step 3 of 7" to report.
               Sticky so it stays readable while scrolling a long form. */}
+          {resumedFrom && (
+            <p className="mb-4 rounded-md border border-border bg-background px-4 py-3 text-sm text-muted-foreground">
+              Welcome back &mdash; we&rsquo;ve restored your answers. Carry on where you left off.
+            </p>
+          )}
+
           <div className="sticky top-[4.375rem] z-10 -mx-5 mb-6 border-b border-hairline-soft bg-surface/95 px-5 py-3 backdrop-blur sm:-mx-7 sm:px-7 lg:mx-0 lg:rounded-lg lg:border lg:border-border lg:bg-background/95 lg:px-5">
             <div className="flex items-center gap-3.5">
               <div
@@ -335,6 +415,10 @@ export function AssessmentWizard({
                 </section>
               );
             })}
+
+            {/* Offered last, after every question — it is optional and must not sit
+                between the user and finishing. */}
+            <PhotoUpload onPhotoKeyChange={setPhotoKey} />
           </div>
 
           {/* Submit row. The error message and the button are in one flex row

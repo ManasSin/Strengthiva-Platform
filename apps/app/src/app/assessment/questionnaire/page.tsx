@@ -66,13 +66,15 @@ function QuestionnaireContent() {
       .catch(() => setInitialAnswers({}));
   }, [prescriptionId]);
 
-  async function handleComplete(answers: Answers) {
+  async function handleComplete(answers: Answers, photoKey: string | null) {
     setSubmitting(true);
     setError(null);
     try {
       // Reuse the assessment from a previous failed attempt rather than creating a
       // second one for the same answers.
-      const id = assessmentId ?? (await api.createHealthAssessment(answers, prescriptionId ?? undefined)).id;
+      const id =
+        assessmentId ??
+        (await api.createHealthAssessment(answers, prescriptionId ?? undefined, photoKey)).id;
       setAssessmentId(id);
       const report = await api.createReport(id);
       router.push(`/report/${report.id}`);

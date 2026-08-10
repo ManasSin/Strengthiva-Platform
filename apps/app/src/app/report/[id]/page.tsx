@@ -203,8 +203,29 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             )}
           </div>
 
-          <div className="mt-4 rounded-md border border-border bg-background p-6">
-            <Markdown className="text-[0.96875rem] leading-relaxed">{report.summary}</Markdown>
+          {/* Summary and the optional self-photo, side by side and the same height.
+              `items-stretch` makes the photo column match the summary card's height,
+              and `aspect-square` then derives its WIDTH from that height — which is what
+              keeps it square without hard-coding a size that would stop matching the
+              moment the summary runs long or short.
+              Stacks on narrow screens: at phone width a square photo beside text would
+              leave the summary in a column too narrow to read. */}
+          <div className="mt-4 flex flex-col items-stretch gap-4 sm:flex-row">
+            <div className="min-w-0 flex-1 rounded-md border border-border bg-background p-6">
+              <Markdown className="text-[0.96875rem] leading-relaxed">{report.summary}</Markdown>
+            </div>
+            {report.photo_url && (
+              <div className="shrink-0 overflow-hidden rounded-md border border-border sm:aspect-square">
+                {/* eslint-disable-next-line @next/next/no-img-element -- served by FastAPI
+                    behind an ownership check, not a statically optimisable asset;
+                    next/image would need the API host in remotePatterns for no gain. */}
+                <img
+                  src={report.photo_url}
+                  alt="You, at the time of this assessment"
+                  className="size-full max-h-[18rem] object-cover sm:max-h-none"
+                />
+              </div>
+            )}
           </div>
 
           <details className="group mt-4 rounded-md border border-border bg-background">

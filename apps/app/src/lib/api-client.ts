@@ -255,7 +255,16 @@ export type ReportResponse = {
   // must be shown in their place — an unexplained empty list reads as "nothing suits
   // you", which is a different and misleading claim.
   product_disclaimer: string | null;
+  // Absolute URL of the optional self-photo taken during the assessment, or null if
+  // skipped. Behind an endpoint that re-checks ownership, so it is not a public link.
+  photo_url: string | null;
   created_at: string;
+};
+
+export type AssessmentDraft = {
+  answers: Record<string, string | string[]>;
+  last_completed_step: string | null;
+  updated_at: string;
 };
 
 export const api = {
@@ -263,10 +272,18 @@ export const api = {
   // see strengthiva-backend/app/routers/questionnaire.py.
   getQuestionnaireSchema: () => request<QuestionnaireSchemaResponse>("/api/v1/questionnaire/schema"),
 
-  createHealthAssessment: (answers: Record<string, unknown>, prescriptionId?: string) =>
+  createHealthAssessment: (
+    answers: Record<string, unknown>,
+    prescriptionId?: string,
+    photoKey?: string | null,
+  ) =>
     request<HealthAssessmentResponse>("/api/v1/health-assessments", {
       method: "POST",
-      body: JSON.stringify({ answers, prescription_id: prescriptionId ?? null }),
+      body: JSON.stringify({
+        answers,
+        prescription_id: prescriptionId ?? null,
+        photo_key: photoKey ?? null,
+      }),
     }),
 
   uploadPrescription: (file: File) => {
@@ -313,6 +330,35 @@ export const api = {
     request<{ store_login_url: string }>("/api/v1/auth/store-login-handoff", {
       method: "POST",
     }),
+
+  // ── Assessment drafts (resume where you left off) ────────────────────────
+  getAssessmentDraft: () =>
+    request<AssessmentDraft | null>("/api/v1/health-assessments/draft"),
+
+  saveAssessmentDraft: (
+    // Matches the wizard's `Answers`, which permits undefined for an unanswered
+    // question. JSON.stringify drops those keys, so the server stores only real answers.
+    answers: Record<string, string | string[] | undefined>,
+    lastCompletedStep: string | null,
+  ) =>
+    request<AssessmentDraft>("/api/v1/health-assessments/draft", {
+      method: "PUT",
+      body: JSON.stringify({ answers, last_completed_step: lastCompletedStep }),
+    }),
+
+  discardAssessmentDraft: () =>
+    request<void>("/api/v1/health-assessments/draft", { method: "DELETE" }),
+
+  // Uploaded before the assessment row exists, so this returns a key the caller
+  // passes to createHealthAssessment alongside the answers.
+  uploadAssessmentPhoto: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ photo_key: string; content_type: string }>(
+      "/api/v1/health-assessments/photo",
+      { method: "POST", body: form },
+    );
+  },
 
   // ── Admin: Knowledge Base indexing (/admin/knowledge-base) ──────────────
   indexStatus: () => request<Record<string, unknown>>("/api/v1/test/index/status"),
