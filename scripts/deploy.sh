@@ -48,7 +48,10 @@ fail() { printf '\n\033[31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 cd "$(dirname "$0")/.."
 
-DEPLOYED_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# Set by CI to the commit it tested and shipped. Falls back to git for a manual run
+# from a checkout, then to "unknown" — the deploy must never fail merely because we
+# couldn't name the revision.
+DEPLOYED_SHA="${DEPLOY_SHA:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 log "Deploying strengthiva-platform @ ${DEPLOYED_SHA} — services: ${SERVICES[*]}"
 
 # ── 0. Guard the build args ─────────────────────────────────────────────────────

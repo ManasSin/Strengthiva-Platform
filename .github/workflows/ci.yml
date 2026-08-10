@@ -90,7 +90,30 @@ jobs:
           echo "services=$svcs" >> "$GITHUB_OUTPUT"
           echo "Will deploy: '${svcs:-(nothing)}'"
 
-      - name: Deploy over SSH
+      - name: Ship the tested tree to the VPS
+        if: steps.which.outputs.services != ''
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass rsync
+          # --delete so a file removed in git is removed on the server too. The excludes
+          # are what must survive: per-app runtime secrets (which are NOT in git), plus
+          # build artefacts and node_modules, which are rebuilt inside Docker anyway and
+          # would make the transfer enormous.
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude 'node_modules/' \
+            --exclude '.next/' \
+            --exclude '.deployed-sha' \
+            --exclude '*.tsbuildinfo' \
+            -e "sshpass -e ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no" \
+            ./ "$VPS_USER@$VPS_HOST:/opt/strengthiva-platform/"
+
+      - name: Build and restart
         if: steps.which.outputs.services != ''
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -98,14 +121,9 @@ jobs:
           SSHPASS: ${{ secrets.VPS_PASSWORD }}
           SERVICES: ${{ steps.which.outputs.services }}
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
           sshpass -e ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password \
             -o PubkeyAuthentication=no "$VPS_USER@$VPS_HOST" \
-            "set -euo pipefail
-             cd /opt/strengthiva-platform
-             git fetch --prune origin
-             git reset --hard origin/main
-             bash scripts/deploy.sh $SERVICES"
+            "cd /opt/strengthiva-platform && DEPLOY_SHA=$(git rev-parse --short HEAD) bash scripts/deploy.sh $SERVICES"
 
       - name: Nothing to deploy
         if: steps.which.outputs.services == ''
