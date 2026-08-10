@@ -253,7 +253,7 @@ function CreateStepForm({
             Triggering chronic condition
             {availableConditions.length === 0 ? (
               <p className="mt-1 text-xs text-red-600">
-                Every existing "Chronic conditions" option is already used by another step — add a new option to
+                Every existing &quot;Chronic conditions&quot; option is already used by another step — add a new option to
                 that question first (see its editor).
               </p>
             ) : (

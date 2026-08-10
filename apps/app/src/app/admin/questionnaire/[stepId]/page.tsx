@@ -391,7 +391,7 @@ function QuestionRow({
             </label>
             {fieldType === "checkbox-group" && (
               <label className="text-xs text-gray-500">
-                Exclusive option value (selecting it clears every other selection, e.g. "None")
+                Exclusive option value (selecting it clears every other selection, e.g. &quot;None&quot;)
                 <input
                   value={exclusiveValue}
                   onChange={(e) => setExclusiveValue(e.target.value)}
