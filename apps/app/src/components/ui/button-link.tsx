@@ -12,11 +12,11 @@ type ButtonLinkProps = ComponentProps<typeof Link> &
   VariantProps<typeof buttonVariants> & { className?: string };
 
 export function ButtonLink({ href, variant, size, className, children, ...props }: ButtonLinkProps) {
-  // Figma's CTAs are consistently pill-shaped (rounded-full) — applied here
-  // rather than in button.tsx (a generated file) so `npx shadcn add` upgrades
-  // don't silently drop it.
+  // The pill shape now lives in `buttonVariants` itself (every brand control is
+  // a pill), so this no longer force-appends `rounded-full` — doing so used to
+  // override the `link` variant's square underline treatment.
   return (
-    <Link href={href} className={cn(buttonVariants({ variant, size }), "rounded-full", className)} {...props}>
+    <Link href={href} className={cn(buttonVariants({ variant, size }), className)} {...props}>
       {children}
     </Link>
   );

@@ -22,7 +22,7 @@ export default function ProductPrice({
   }
 
   return (
-    <div className="flex flex-col text-brandneutral">
+    <div className="flex flex-col text-forest">
       <span
         className={clx("text-xl-semi font-semibold", {
           "text-secondary": selectedPrice.price_type === "sale",
@@ -39,7 +39,7 @@ export default function ProductPrice({
       {selectedPrice.price_type === "sale" && (
         <>
           <p>
-            <span className="text-grey-50">Original: </span>
+            <span className="text-muted">Original: </span>
             <span
               className="line-through"
               data-testid="original-product-price"

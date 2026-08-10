@@ -9,15 +9,11 @@ export type DoshaHero = {
   components: string[];
 };
 
-const DOSHA_ICONS: Record<string, string> = {
-  Vata: "🌬️",
-  Pitta: "🔥",
-  Kapha: "💧",
-};
-
-export function doshaIcon(component: string): string {
-  return DOSHA_ICONS[component] ?? "🔸";
-}
+// `doshaIcon` (emoji per component) lived here until the 2026-08 rebrand. Its
+// only caller, the report page, now draws Vata/Pitta/Kapha with the linear
+// lucide set the rest of the system uses — emoji render as a different typeface
+// on every platform and are announced by their CLDR name, neither of which the
+// brand controls. Icon choice is presentation, so it lives in the component.
 
 export function parseDoshaHero(markdown: string): DoshaHero {
   const plain = markdown.replace(/\*\*/g, "").trim();

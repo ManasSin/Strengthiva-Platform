@@ -13,8 +13,8 @@ export function AccountCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-white p-6 md:p-8">
-      {title && <h2 className="font-headline text-xl font-bold text-foreground">{title}</h2>}
+    <section className="rounded-lg border border-border bg-background p-6 md:p-8">
+      {title && <h2 className="text-subhead text-foreground">{title}</h2>}
       {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       <div className={title ? "mt-6" : ""}>{children}</div>
     </section>

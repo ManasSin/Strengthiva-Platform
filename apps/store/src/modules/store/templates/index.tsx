@@ -32,7 +32,7 @@ const StoreTemplate = ({
       <RefinementList sortBy={sort} query={search} search />
       <div className="w-full">
         <div className="mb-8">
-          <h1 data-testid="store-page-title" className="font-headline text-2xl font-bold text-brandneutral">
+          <h1 data-testid="store-page-title" className="font-display text-heading font-normal text-forest">
             {search ? `Results for “${search}”` : "All products"}
           </h1>
         </div>

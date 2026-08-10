@@ -1,3 +1,4 @@
+import { getAppURL } from "@lib/util/env"
 import { Heading, Text, Button } from "@modules/common/components/ui"
 
 // One shared Strengthiva account across app. and store. (decided
@@ -10,7 +11,9 @@ import { Heading, Text, Button } from "@modules/common/components/ui"
 // "Login/register: Medusa-default → SSO-aware" note (this is the "redirect"
 // option that note left undecided).
 const LoginTemplate = () => {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const appUrl = getAppURL()
+  // Not getBaseURL() — that falls back to https://localhost:8000 (FastAPI's port),
+  // which would be the wrong origin to send a signed-in user back to in local dev.
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3001"
   const continueUrl = `${appUrl}/login?redirect=${encodeURIComponent(`${baseUrl}/account`)}`
 
@@ -20,7 +23,7 @@ const LoginTemplate = () => {
         <Heading level="h1" className="txt-large-plus">
           One account, everywhere
         </Heading>
-        <Text className="mt-2 text-grey-60">
+        <Text className="mt-2 text-muted">
           Your Strengthiva account works across the assessment app and the store.
           Sign in once on app.strengthiva.com.
         </Text>

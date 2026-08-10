@@ -30,7 +30,7 @@ export function AccountNav() {
             className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-primary text-white"
-                : "text-muted-foreground hover:bg-white hover:text-foreground"
+                : "text-muted-foreground hover:bg-background hover:text-foreground"
             }`}
           >
             {section.label}
@@ -45,7 +45,7 @@ export function AccountNav() {
         type="button"
         onClick={logout}
         disabled={loggingOut}
-        className="mt-0 flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-white hover:text-foreground disabled:opacity-60 md:mt-2 md:border-t md:border-border md:pt-4"
+        className="mt-0 flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:opacity-60 md:mt-2 md:border-t md:border-border md:pt-4"
       >
         <LogOut className="size-4" aria-hidden />
         {loggingOut ? "Logging out…" : "Log out"}

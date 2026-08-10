@@ -109,7 +109,7 @@ export function BmiField({
   return (
     <div className="mb-6">
       <label className="mb-1.5 block text-sm font-medium text-foreground">
-        Height, Weight &amp; BMI<span className="ml-1 text-secondary">*</span>
+        Height, Weight &amp; BMI<span className="ml-1 text-destructive" aria-hidden>*</span>
       </label>
       <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
         <div>
@@ -166,7 +166,7 @@ export function BmiField({
         </div>
         {bmi !== null && (
           <div className="rounded-lg bg-primary/10 px-3 py-2 text-center">
-            <div className="text-lg font-bold text-primary">{bmi.toFixed(1)}</div>
+            <div className="font-display text-xl text-primary">{bmi.toFixed(1)}</div>
             <div className="text-[10px] text-muted-foreground">{category}</div>
           </div>
         )}

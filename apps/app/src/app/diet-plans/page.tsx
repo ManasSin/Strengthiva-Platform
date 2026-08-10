@@ -31,7 +31,7 @@ export default function DietPlansPage() {
       <MarketingNav />
       <main className="flex-1">
         <div className="mx-auto max-w-4xl px-6 py-16 text-center">
-          <h1 className="font-headline text-3xl font-bold text-primary md:text-4xl">
+          <h1 className="text-[clamp(1.875rem,4vw,2.5rem)]">
             Personalized Diet Plans
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
@@ -43,12 +43,12 @@ export default function DietPlansPage() {
         <div className="mx-auto max-w-3xl px-6 pb-16">
           <ol className="space-y-6">
             {steps.map((step, i) => (
-              <li key={step.title} className="flex gap-4 rounded-2xl border border-border bg-white p-6">
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              <li key={step.title} className="flex gap-4 rounded-lg border border-border bg-background p-6">
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                   {i + 1}
                 </span>
                 <div>
-                  <h2 className="font-headline text-base font-semibold text-foreground">
+                  <h2 className="font-display text-base font-semibold text-foreground">
                     {step.title}
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
@@ -58,7 +58,7 @@ export default function DietPlansPage() {
           </ol>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <ButtonLink href="/assessment" variant="secondary" size="lg">
+            <ButtonLink href="/assessment" variant="default" size="lg">
               Start Your Free Assessment
             </ButtonLink>
             <ButtonLink href="/sample-plan" variant="outline" size="lg">

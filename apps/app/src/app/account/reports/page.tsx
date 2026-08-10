@@ -32,7 +32,7 @@ export default function AccountReportsPage() {
           title="No reports yet"
           body="Take the assessment and your Ayurvedic reading and diet plan will appear here."
           action={
-            <ButtonLink href="/assessment" variant="secondary" size="lg">
+            <ButtonLink href="/assessment" variant="default" size="lg">
               Take the assessment
             </ButtonLink>
           }

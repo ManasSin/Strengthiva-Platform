@@ -34,7 +34,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
               onClick={() => updateOption(option.id, v)}
               key={v}
               className={clx(
-                "border-grey-20 bg-grey-5 border text-small-regular h-10 rounded-lg p-2 flex-1 ",
+                "border-hairline bg-surface border text-small-regular h-10 rounded-lg p-2 flex-1 ",
                 {
                   "border-primary bg-primary/5 text-primary font-medium": v === current,
                   "hover:border-primary/40 transition-colors duration-150":

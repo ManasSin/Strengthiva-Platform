@@ -2,15 +2,31 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MarketingNav } from "@/components/layout/nav";
+import { ArrowRight, Check, CircleAlert } from "lucide-react";
+
+import { FlowShell } from "@/components/assessment/flow-shell";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { api, ApiError, type PrescriptionResponse } from "@/lib/api-client";
 import { TagListEditor } from "@/components/assessment/tag-list-editor";
 
-// "Review Extraction" — docs/platform-architecture/modules/app-frontend.md §3 step 2.
-// Note: the original prescription image isn't persisted anywhere on the backend
-// (only OCR text) — the Figma design's "original document image with zoom" panel
-// is left out here rather than faked; flagged as a known gap, not silently dropped.
+// "Here's what we read" — step 1's confirmation screen
+// (docs/platform-architecture/modules/app-frontend.md §3 step 2).
+//
+// Restyled for the 2026-08 rebrand against docs/redesign/report conformation
+// page.png. The screenshot shows numeric lab analytes (Vitamin D, Hemoglobin,
+// TSH …) with unit inputs and IN RANGE / LOW / WATCH flags; this endpoint
+// returns prescription fields instead (symptoms, duration, focus, prescribed
+// items), so what carries over is the *treatment* — one confirmation panel,
+// hairline-separated rows, a name-and-hint label column against an editable
+// value column, and the two CTAs grouped at the bottom left — applied to the
+// fields that actually exist. The analyte rows are not faked.
+//
+// Note: the original image isn't persisted anywhere on the backend (only OCR
+// text), so the reference's "original document, with zoom" panel is left out
+// rather than mocked. Known gap, not a silent drop.
 export default function ReviewExtractionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -38,7 +54,7 @@ export default function ReviewExtractionPage({ params }: { params: Promise<{ id:
           router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
           return;
         }
-        setError("We couldn't load this prescription.");
+        setError("We couldn't load this report.");
       });
   }, [id, router]);
 
@@ -61,110 +77,177 @@ export default function ReviewExtractionPage({ params }: { params: Promise<{ id:
 
   if (error && !prescription) {
     return (
-      <main className="flex flex-1 items-center justify-center px-6 py-24 text-center text-red-700">
-        {error}
-      </main>
+      <FlowShell step="upload" back={{ href: "/assessment/upload", label: "Back to upload" }}>
+        <p
+          role="alert"
+          className="flex items-start gap-2.5 rounded-md border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          <CircleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.7} />
+          {error}
+        </p>
+      </FlowShell>
     );
   }
 
   if (!prescription) {
     return (
-      <main className="flex flex-1 items-center justify-center px-6 py-24">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-      </main>
+      <FlowShell step="upload" back={{ href: "/assessment/upload", label: "Back to upload" }}>
+        <div className="flex justify-center py-20">
+          <div className="size-10 rounded-full border-[3px] border-border border-t-primary motion-safe:animate-spin" />
+          <span className="sr-only">Loading your report</span>
+        </div>
+      </FlowShell>
     );
   }
 
-  // Crude, non-AI-generated confidence signal — "High" only when every field was
-  // extracted; there's no real confidence score coming back from the LLM call.
-  const fieldsFound = [symptoms.length > 0, !!duration, !!focus, items.length > 0].filter(Boolean).length;
-  const accuracy = fieldsFound >= 3 ? "High" : fieldsFound >= 1 ? "Medium" : "Low";
-
   return (
-    <>
-      <MarketingNav />
-      <main className="flex-1">
-        <div className="mx-auto max-w-2xl px-6 py-12">
-          <div className="flex items-center justify-between">
-            <h1 className="font-headline text-2xl font-bold text-foreground">Review Extraction</h1>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              AI Extraction Accuracy: {accuracy}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Confirm or correct what we read from your prescription before continuing.
-          </p>
+    <FlowShell step="upload" back={{ href: "/assessment/upload", label: "Back to upload" }}>
+      <header className="mb-6 max-w-[46rem]">
+        <h1 className="text-[clamp(1.75rem,4vw,2.375rem)]">
+          Have a recent lab report? Start with what you already have.
+        </h1>
+        <p className="mt-3 max-w-[54ch] text-[1.0625rem] leading-relaxed text-muted-foreground">
+          Upload a photo and we&rsquo;ll read the key values for you — so the questions that
+          follow are shorter and smarter. This step is optional; you can skip straight to the
+          assessment.
+        </p>
+      </header>
 
-          <div className="mt-8 rounded-2xl border border-border bg-white p-6">
-            <label className="mb-1.5 block text-sm font-medium text-foreground">Symptoms</label>
-            <TagListEditor values={symptoms} onChange={setSymptoms} placeholder="Add a symptom…" />
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-border bg-white p-6">
-            <label className="mb-1.5 block text-sm font-medium text-foreground">Duration</label>
-            <input
-              type="text"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="e.g. 3 months"
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
-            />
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-border bg-white p-6">
-            <label className="mb-1.5 block text-sm font-medium text-foreground">Focus</label>
-            <input
-              type="text"
-              value={focus}
-              onChange={(e) => setFocus(e.target.value)}
-              placeholder="e.g. Type 2 Diabetes management"
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
-            />
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-border bg-white p-6">
-            <label className="mb-1.5 block text-sm font-medium text-foreground">Prescribed Items</label>
-            <TagListEditor values={items} onChange={setItems} placeholder="Add a medicine/product…" />
-            {prescription.resolved_items.length > 0 && (
-              <ul className="mt-4 space-y-2 border-t border-border pt-4">
-                {prescription.resolved_items.map((item) => (
-                  <li key={item.name} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground">{item.name}</span>
-                    <span
-                      className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                        item.resolution.status === "resolved"
-                          ? "bg-green-100 text-green-800"
-                          : item.resolution.status === "out_of_stock"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {item.resolution.status === "resolved"
-                        ? "In Stock"
-                        : item.resolution.status === "out_of_stock"
-                          ? "Temporarily Unavailable"
-                          : "Coming Soon"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {error && (
-            <div className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-          )}
-
-          <div className="mt-8 flex items-center justify-between">
-            <Button type="button" variant="outline" size="lg" onClick={() => router.push("/assessment/upload")}>
-              ← Retake Photo
-            </Button>
-            <Button type="button" variant="default" size="lg" disabled={saving} onClick={handleContinue}>
-              {saving ? "Saving…" : "Continue to Final Assessment Steps →"}
-            </Button>
-          </div>
+      <section className="rounded-lg border border-border bg-background p-6 shadow-hairline sm:p-7">
+        <div className="flex items-center gap-2.5">
+          <Check className="size-5 shrink-0 text-primary" strokeWidth={1.7} />
+          <h2 className="font-display text-subhead">Here&rsquo;s what we read</h2>
         </div>
-      </main>
-    </>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Confirm or correct anything before we carry it forward. Nothing is acted on until you
+          say it&rsquo;s right.
+        </p>
+
+        <div className="mt-6 divide-y divide-hairline-soft border-t border-hairline-soft">
+          <ReviewRow
+            label="Symptoms"
+            hint="What the report describes"
+            control={
+              <TagListEditor values={symptoms} onChange={setSymptoms} placeholder="Add a symptom…" />
+            }
+          />
+          <ReviewRow
+            label="Duration"
+            hint="How long it's been going on"
+            control={
+              <Input
+                id="review-duration"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="e.g. 3 months"
+              />
+            }
+          />
+          <ReviewRow
+            label="Focus"
+            hint="The condition being managed"
+            control={
+              <Input
+                id="review-focus"
+                value={focus}
+                onChange={(e) => setFocus(e.target.value)}
+                placeholder="e.g. Type 2 Diabetes management"
+              />
+            }
+          />
+          <ReviewRow
+            label="Prescribed items"
+            hint="Medicines and products named"
+            control={
+              <TagListEditor
+                values={items}
+                onChange={setItems}
+                placeholder="Add a medicine/product…"
+              />
+            }
+          />
+        </div>
+
+        {prescription.resolved_items.length > 0 && (
+          <div className="mt-6 border-t border-hairline-soft pt-5">
+            <h3 className="mb-3 font-mono text-label uppercase text-primary">
+              What we can supply
+            </h3>
+            <ul className="space-y-2.5">
+              {prescription.resolved_items.map((item) => (
+                <li key={item.name} className="flex items-center justify-between gap-4 text-sm">
+                  <span className="min-w-0 text-foreground">{item.name}</span>
+                  <Badge
+                    variant={item.resolution.status === "resolved" ? "flag" : "flag-watch"}
+                    size="sm"
+                  >
+                    {item.resolution.status === "resolved"
+                      ? "In stock"
+                      : item.resolution.status === "out_of_stock"
+                        ? "Unavailable"
+                        : "Coming soon"}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-6 flex items-start gap-2.5 rounded-md border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
+            <CircleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.7} />
+            {error}
+          </p>
+        )}
+
+        {/* Both CTAs grouped left, in reading order, matching the reference.
+            This row was `justify-between`, which threw the confirm button to
+            the far right edge of the panel — a 700px gap from the action that
+            precedes it, and on a narrow viewport the two collapsed into
+            opposite corners of a wrapped row. */}
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <Button type="button" variant="default" disabled={saving} onClick={handleContinue}>
+            {saving ? "Saving…" : "Looks right — continue"}
+            {!saving && <ArrowRight strokeWidth={1.7} />}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => router.push("/assessment/questionnaire")}
+          >
+            Skip, I&rsquo;ll just answer questions
+          </Button>
+        </div>
+      </section>
+    </FlowShell>
+  );
+}
+
+/**
+ * One confirmation row: name and hint on the left, the editable value on the
+ * right, hairline between. Grid rather than flex so every row's value column
+ * starts at the same x — with flex, a long label pushed its own input out of
+ * line with the rows above and below it.
+ */
+function ReviewRow({
+  label,
+  hint,
+  control,
+}: {
+  label: string;
+  hint: string;
+  control: React.ReactNode;
+}) {
+  return (
+    <div className="grid items-center gap-x-6 gap-y-2 py-4 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
+      <div>
+        <Label className="text-[0.9375rem]">{label}</Label>
+        <p className="mt-0.5 text-[0.78125rem] text-muted-foreground">{hint}</p>
+      </div>
+      <div className="min-w-0">{control}</div>
+    </div>
   );
 }

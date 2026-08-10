@@ -2,10 +2,14 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CircleAlert, Zap } from "lucide-react";
+
 import { AssessmentWizard } from "@/components/assessment/wizard";
+import { FlowShell } from "@/components/assessment/flow-shell";
+import { MarketingNav } from "@/components/layout/nav";
+import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api-client";
 import type { Answers } from "@/lib/questionnaire-types";
-import { MarketingNav } from "@/components/layout/nav";
 
 // Health assessment wizard page — orchestrates submission per
 // docs/platform-architecture/tech-specs/backend/health-assessment-and-reports.md:
@@ -16,6 +20,10 @@ import { MarketingNav } from "@/components/layout/nav";
 // a "Smart Streamlining Active" banner — decided 2026-07-14: pre-fill only, no wizard
 // steps are hidden/skipped (simpler and less brittle than trying to guess which
 // fields a given prescription makes redundant).
+//
+// Restyled for the 2026-08 rebrand: the page now sits in FlowShell at step 2, so
+// the stepper and the sage flow surface are shared with upload/review/plan rather
+// than re-declared here.
 function QuestionnaireContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,14 +108,19 @@ function QuestionnaireContent() {
     }
   }
 
+  // Report generation is ~10-15s of LLM calls. Full-bleed status screen rather
+  // than a spinner over the form: there is nothing on the form worth looking at
+  // while it runs, and leaving it visible invited a second submit.
   if (submitting) {
     return (
       <>
         <MarketingNav />
         <main className="flex flex-1 flex-col items-center justify-center bg-leaf-motif px-6 py-24 text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-          <h1 className="mt-6 font-headline text-xl font-bold text-foreground">Analyzing…</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Determining your Ayurvedic constitution</p>
+          <div className="size-12 rounded-full border-[3px] border-border border-t-primary motion-safe:animate-spin" />
+          <h1 className="mt-6 text-[1.75rem]">Reading your answers…</h1>
+          <p className="mt-2 text-[0.9375rem] text-muted-foreground">
+            Working out your constitution and where it&rsquo;s currently out of balance.
+          </p>
         </main>
       </>
     );
@@ -115,50 +128,55 @@ function QuestionnaireContent() {
 
   if (initialAnswers === undefined) {
     return (
-      <>
-        <MarketingNav />
-        <main className="flex flex-1 items-center justify-center bg-leaf-motif px-6 py-24">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-        </main>
-      </>
+      <FlowShell step="questions" completed={["upload"]} width="wide">
+        <div className="flex justify-center py-24">
+          <div className="size-10 rounded-full border-[3px] border-border border-t-primary motion-safe:animate-spin" />
+          <span className="sr-only">Loading your report details</span>
+        </div>
+      </FlowShell>
     );
   }
 
   return (
-    <>
-      <MarketingNav />
-      <main className="flex-1 bg-leaf-motif">
-        {error && (
-          <div className="mx-auto mt-6 flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            <span>{error}</span>
-            {assessmentId && (
-              <button
-                type="button"
-                onClick={retryReport}
-                className="rounded-md bg-red-700 px-3 py-1.5 font-medium text-white hover:bg-red-800"
-              >
-                Try again
-              </button>
-            )}
-          </div>
-        )}
-        <AssessmentWizard
-          onComplete={handleComplete}
-          initialAnswers={initialAnswers}
-          banner={
-            showStreamliningBanner ? (
-              <div className="mb-6 flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-3 text-sm text-primary">
-                <span aria-hidden>⚡</span>
-                <span>
-                  <strong>Smart Streamlining Active</strong> — we&apos;ve pre-filled what your
-                  prescription told us. Review and adjust anything before continuing.
-                </span>
-              </div>
-            ) : null
-          }
-        />
-      </main>
-    </>
+    <FlowShell
+      step="questions"
+      completed={prescriptionId ? ["upload"] : []}
+      back={{ href: "/assessment", label: "Back" }}
+      width="wide"
+    >
+      {error && (
+        <div
+          role="alert"
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          <span className="flex items-start gap-2.5">
+            <CircleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.7} />
+            {error}
+          </span>
+          {assessmentId && (
+            <Button type="button" variant="destructive" size="sm" onClick={retryReport}>
+              Try again
+            </Button>
+          )}
+        </div>
+      )}
+      <AssessmentWizard
+        onComplete={handleComplete}
+        initialAnswers={initialAnswers}
+        banner={
+          showStreamliningBanner ? (
+            <div className="mb-6 flex items-start gap-2.5 rounded-md border border-accent bg-accent/15 px-4 py-3 text-sm text-neutral">
+              <Zap className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.7} />
+              <span>
+                <strong className="font-semibold">Smart streamlining active</strong> —
+                we&rsquo;ve pre-filled what your report told us. Review and adjust anything
+                before continuing.
+              </span>
+            </div>
+          ) : null
+        }
+      />
+    </FlowShell>
   );
 }
 

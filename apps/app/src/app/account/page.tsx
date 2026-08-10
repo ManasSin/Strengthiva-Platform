@@ -124,7 +124,7 @@ export default function ProfilePage() {
               onChange={(e) => setName(e.target.value)}
               className="min-w-0 flex-1 rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
             />
-            <Button type="button" variant="secondary" disabled={busy || !name.trim()} onClick={saveName}>
+            <Button type="button" variant="default" disabled={busy || !name.trim()} onClick={saveName}>
               {busy ? "Saving…" : "Save"}
             </Button>
           </div>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
             />
             <Button
               type="button"
-              variant="secondary"
+              variant="default"
               disabled={busy || !email.includes("@")}
               onClick={saveEmail}
             >
@@ -205,7 +205,7 @@ export default function ProfilePage() {
               />
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 disabled={busy || mobile.replace(/\D/g, "").length < 10}
                 onClick={sendMobileOtp}
               >

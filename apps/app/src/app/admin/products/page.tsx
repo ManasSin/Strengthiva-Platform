@@ -56,7 +56,7 @@ export default function AdminProductsPage() {
         sheet is safe.
       </div>
 
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-lg border bg-background p-5">
         <div className="font-medium">CSV format</div>
         <ul className="mt-2 list-inside list-disc text-sm text-gray-600">
           <li>
@@ -81,7 +81,7 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-lg border bg-background p-5">
         <div className="font-medium">Upload</div>
         <div className="mt-3">
           <input
@@ -101,7 +101,7 @@ export default function AdminProductsPage() {
       {error && <div className="text-red-600 text-sm">{error}</div>}
 
       {result && (
-        <div className="rounded-lg border bg-white p-5">
+        <div className="rounded-lg border bg-background p-5">
           <div className="font-medium">
             Import finished — {result.created} created, {result.updated} updated,{" "}
             {result.errors} failed

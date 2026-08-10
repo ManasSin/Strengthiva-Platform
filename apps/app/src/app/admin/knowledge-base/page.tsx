@@ -116,7 +116,7 @@ export default function KnowledgeBasePage() {
       )}
 
       {DOC_TYPES.map(({ value, label }) => (
-        <div key={value} className="rounded-lg border bg-white p-5">
+        <div key={value} className="rounded-lg border bg-background p-5">
           <div className="font-medium">{label}</div>
           <div className="mt-3 text-sm text-gray-500">
             {documents[value].length === 0 ? (

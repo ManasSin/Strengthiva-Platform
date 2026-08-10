@@ -30,7 +30,7 @@ export default function AccountOrdersPage() {
           title="No orders yet"
           body="Anything you buy from the Strengthiva store will show up here."
           action={
-            <ButtonLink href={STORE_URL} variant="secondary" size="lg">
+            <ButtonLink href={STORE_URL} variant="default" size="lg">
               Browse products
             </ButtonLink>
           }

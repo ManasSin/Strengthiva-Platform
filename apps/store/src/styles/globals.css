@@ -2,6 +2,143 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/*
+  ============================================================================
+  Strengthiva design tokens — the 2026-08 rebrand.
+  ============================================================================
+
+  The same system as app.strengthiva.com (see
+  apps/app/src/app/globals.css, which carries the full rationale and the list
+  of deliberate divergences from the Nexura guide). Kept in step by hand: the
+  two apps are on different Tailwind majors — this one is v3 with the Medusa UI
+  preset, the app is v4 with CSS-first `@theme` — so there is no shared config
+  file to import. If you change a value here, change it there too.
+
+  Written as space-separated RGB channels rather than hex so Tailwind v3's
+  `<alpha-value>` slot works: that's what makes `bg-primary/10` and
+  `text-forest/70` resolve instead of silently producing nothing. Hand-written
+  CSS in this file reaches them as `rgb(var(--token))`.
+
+  Source of truth for the values: docs/redesign/brand-spec.md and
+  docs/redesign/Nexura-design-guide-colors-updated.md.
+*/
+:root {
+  --brand-bg: 255 255 255;         /* #FFFFFF  page                        */
+  --brand-surface: 244 247 245;    /* #F4F7F5  soft sage tint              */
+  --brand-surface-2: 235 240 236;  /* #EBF0EC  one step down               */
+  --brand-fg: 21 32 26;            /* #15201A  deep forest pine            */
+  --brand-muted: 104 115 108;      /* #68736C  4.9:1 on white ✓            */
+  --brand-sage: 168 198 178;       /* #A8C6B2  THE accent                  */
+  --brand-sage-hover: 147 182 161; /* #93B6A1                              */
+  --brand-sage-soft: 216 229 221;  /* #D8E5DD  accent at rest              */
+  --brand-primary: 12 107 54;      /* #0C6B36                              */
+  --brand-secondary: 254 107 1;    /* #FE6B01                              */
+  --brand-tertiary: 255 248 242;   /* #FFF8F2                              */
+  --brand-neutral: 10 79 40;       /* #0A4F28                              */
+  --brand-danger: 154 90 69;       /* #9A5A45                              */
+
+  /* The hairline border system (brand-spec rule 4) is the foreground colour at
+     12% — expressed as a ready-made rgba because it is always used at that one
+     opacity, and as channels so `border-hairline/50` still works if needed. */
+  --brand-hairline: 21 32 26;
+
+  /* Soft, diffused elevation only — never a hard drop shadow. */
+  --brand-shadow-hairline: 0 1px 2px rgba(21, 32, 26, 0.05);
+  --brand-shadow-soft: 0 8px 30px -12px rgba(21, 32, 26, 0.14);
+  --brand-shadow-lifted: 0 26px 60px -24px rgba(21, 32, 26, 0.22);
+}
+
+/*
+  Medusa UI preset remap.
+  ----------------------
+  The storefront's templates are Medusa's, and they paint with the preset's own
+  semantic utilities — `text-ui-fg-base`, `bg-ui-bg-subtle`, `border-ui-border-base`
+  and friends, ~200 usages across 65 files. Those utilities all resolve through
+  the CSS custom properties below, which the preset seeds with its stock zinc
+  ramp (`rgba(24, 24, 27, 1)` and so on).
+
+  Rebinding the variables here re-skins every one of those call sites at once.
+  The alternative was rewriting 65 template files to swap class names, which
+  would have been a far larger diff, would fight every future Medusa upgrade,
+  and would leave any missed file visibly stock.
+
+  Declared after the preset's own block and at equal-or-greater specificity so
+  it wins the cascade. Values are `rgba()` strings because that is the format
+  the preset's utilities expect — not the space-separated channels the brand
+  tokens above use.
+*/
+:root,
+[data-mode="light"] {
+  --fg-base: rgba(21, 32, 26, 1); /* forest */
+  --fg-subtle: rgba(104, 115, 108, 1); /* muted, 4.9:1 on white */
+  --fg-muted: rgba(104, 115, 108, 0.78);
+  --fg-disabled: rgba(104, 115, 108, 0.45);
+  --fg-interactive: rgba(12, 107, 54, 1); /* primary green */
+  --fg-interactive-hover: rgba(10, 79, 40, 1); /* neutral */
+  --fg-error: rgba(154, 90, 69, 1); /* danger clay */
+  --fg-on-color: rgba(255, 255, 255, 1);
+  --fg-on-inverted: rgba(255, 255, 255, 1);
+
+  --bg-base: rgba(255, 255, 255, 1);
+  --bg-base-hover: rgba(244, 247, 245, 1); /* surface */
+  --bg-base-pressed: rgba(235, 240, 236, 1); /* surface-2 */
+  --bg-subtle: rgba(244, 247, 245, 1);
+  --bg-subtle-hover: rgba(235, 240, 236, 1);
+  --bg-subtle-pressed: rgba(235, 240, 236, 1);
+  --bg-component: rgba(244, 247, 245, 1);
+  --bg-component-hover: rgba(235, 240, 236, 1);
+  --bg-component-pressed: rgba(235, 240, 236, 1);
+  --bg-field: rgba(255, 255, 255, 1);
+  --bg-field-hover: rgba(244, 247, 245, 1);
+  --bg-field-component: rgba(255, 255, 255, 1);
+  --bg-field-component-hover: rgba(244, 247, 245, 1);
+  --bg-highlight: rgba(168, 198, 178, 0.22); /* the sage accent, as a wash */
+  --bg-highlight-hover: rgba(168, 198, 178, 0.3);
+  --bg-interactive: rgba(12, 107, 54, 1);
+  --bg-disabled: rgba(244, 247, 245, 1);
+  --bg-overlay: rgba(21, 32, 26, 0.4);
+
+  --border-base: rgba(21, 32, 26, 0.12); /* the hairline system */
+  --border-strong: rgba(21, 32, 26, 0.2);
+  --border-interactive: rgba(12, 107, 54, 1);
+  --border-error: rgba(154, 90, 69, 1);
+  --border-danger: rgba(154, 90, 69, 1);
+  --border-menu-top: rgba(21, 32, 26, 0.08);
+  --border-menu-bot: rgba(21, 32, 26, 0.12);
+}
+
+@layer base {
+  body {
+    background-color: rgb(var(--brand-bg));
+    color: rgb(var(--brand-fg));
+    font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+
+  /* Display face at weight 400 with negative tracking — brand-spec rule 3.
+     Medusa's preset ships its own heading sizes; this only takes over the
+     family, weight and tracking so those sizes still apply. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-newsreader), Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: rgb(var(--brand-sage));
+    color: rgb(var(--brand-fg));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand-primary));
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {

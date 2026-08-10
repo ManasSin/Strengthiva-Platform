@@ -74,7 +74,7 @@ export default function BatchCertificatesPage() {
       <h1 className="text-xl font-semibold">Batch Certificates</h1>
       {error && <div className="text-red-600 text-sm">{error}</div>}
 
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-lg border bg-background p-5">
         <div className="font-medium mb-3">Create a new batch</div>
         <div className="flex gap-2 flex-wrap">
           <input
@@ -100,7 +100,7 @@ export default function BatchCertificatesPage() {
 
       <div className="flex flex-col gap-y-4">
         {batches.map((batch) => (
-          <div key={batch.id} className="rounded-lg border bg-white p-5">
+          <div key={batch.id} className="rounded-lg border bg-background p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="font-medium">{batch.batch_number}</div>

@@ -10,6 +10,15 @@ import {
   ThHTMLAttributes,
 } from "react"
 
+// The storefront's own UI kit (not Medusa's) — every store template renders
+// through these, so this file is where the 2026-08 rebrand lands for the whole
+// commerce side. Props and exports are unchanged; only the classes moved onto
+// the brand tokens in tailwind.config.js / styles/globals.css.
+//
+// Kept deliberately in step with apps/app/src/components/ui/* — a shopper
+// crosses between the two origins mid-journey (plan -> cart -> checkout), so a
+// button or a card that looks different on the store reads as a different site.
+
 // TODO: Add Toaster component back when needed for notifications
 
 // Re-export clsx as clx for compatibility
@@ -41,10 +50,13 @@ export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>(
     return (
       <Component
         ref={ref}
+        // Weight 400, not bold: Newsreader at 400 with negative tracking is the
+        // whole point of the face (brand-spec rule 3), and bolding it reads as
+        // a different brand. Sizes come off the shared display scale.
         className={clsx(
-          "font-headline font-bold text-brandneutral",
-          Component === "h1" && "text-3xl",
-          Component === "h2" && "text-2xl",
+          "font-display font-normal text-forest",
+          Component === "h1" && "text-heading small:text-title",
+          Component === "h2" && "text-subhead small:text-heading",
           Component === "h3" && "text-xl",
           className
         )}
@@ -81,15 +93,24 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
+        // Sizes set min-h + padding rather than a fixed h-*, matching the app's
+        // Button. A locked height is what makes a call site's own py-*/text-*
+        // override push the label off-centre and stop it matching the control
+        // beside it.
         className={clsx(
-          "inline-flex gap-2 items-center justify-center rounded-full font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          variant === "primary" && "bg-primary text-white hover:bg-primary/90",
+          "inline-flex gap-2 items-center justify-center rounded-full border border-transparent font-semibold whitespace-nowrap transition-colors",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+          "disabled:pointer-events-none disabled:opacity-45",
+          // Sage-filled — the single high-value CTA per viewport
+          // (brand-spec rule 1: add-to-cart, place-order, and little else).
+          variant === "primary" && "bg-accent text-forest shadow-hairline hover:bg-accent-hover",
+          // The companion action: white with a hairline.
           variant === "secondary" &&
-            "bg-white text-brandneutral border border-grey-20 hover:bg-grey-5",
-          variant === "transparent" && "bg-transparent hover:bg-grey-10",
-          size === "small" && "h-8 px-3 text-sm",
-          size === "medium" && "h-10 px-4",
-          size === "large" && "h-12 px-6 text-lg",
+            "bg-bg text-forest border-hairline hover:border-forest/25 hover:bg-surface",
+          variant === "transparent" && "bg-transparent text-forest hover:bg-surface",
+          size === "small" && "min-h-10 px-4 py-2.5 text-sm",
+          size === "medium" && "min-h-12 px-[1.375rem] py-3.5 text-[0.9375rem]",
+          size === "large" && "min-h-[3.25rem] px-7 py-4 text-base",
           className
         )}
         {...props}
@@ -109,7 +130,7 @@ export const Container = forwardRef<HTMLDivElement, ContainerProps>(
     return (
       <div
         ref={ref}
-        className={clsx("bg-white rounded-lg p-4", className)}
+        className={clsx("rounded-md border border-hairline bg-bg p-5 shadow-hairline", className)}
         {...props}
       >
         {children}
@@ -130,13 +151,15 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
       <span
         ref={ref}
         className={clsx(
-          "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium",
-          color === "green" && "bg-green-100 text-green-700",
-          color === "red" && "bg-red-100 text-red-700",
-          color === "blue" && "bg-blue-100 text-blue-700",
-          color === "orange" && "bg-orange-100 text-orange-700",
-          color === "grey" && "bg-gray-100 text-gray-700",
-          color === "purple" && "bg-purple-100 text-purple-700",
+          "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+          color === "green" && "bg-accent/25 text-forest",
+          // /10, not /12 — 12 isn't on Tailwind v3's opacity scale, so the
+          // utility was silently dropped and the badge rendered transparent.
+          color === "red" && "bg-danger/10 text-danger",
+          color === "blue" && "bg-surface-2 text-forest",
+          color === "orange" && "bg-tertiary text-secondary",
+          color === "grey" && "bg-surface text-muted",
+          color === "purple" && "bg-surface-2 text-muted",
           className
         )}
         {...props}
@@ -157,7 +180,7 @@ export const IconBadge = forwardRef<HTMLSpanElement, IconBadgeProps>(
       <span
         ref={ref}
         className={clsx(
-          "inline-flex items-center justify-center rounded-full bg-gray-100 p-1",
+          "inline-flex items-center justify-center rounded-full bg-surface p-1 text-primary",
           className
         )}
         {...props}
@@ -178,7 +201,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       <button
         ref={ref}
         className={clsx(
-          "inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2",
+          "inline-flex size-11 items-center justify-center rounded-full text-forest transition-colors hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
           className
         )}
         {...props}
@@ -198,7 +221,7 @@ export const Label = forwardRef<HTMLLabelElement, LabelProps>(
     return (
       <label
         ref={ref}
-        className={clsx("text-sm font-medium", className)}
+        className={clsx("text-[0.9375rem] font-medium text-forest", className)}
         {...props}
       >
         {children}
@@ -221,7 +244,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={clsx(
-            "flex h-10 w-full rounded-lg border border-grey-20 bg-white px-3 py-2 text-sm placeholder:text-grey-40 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-11 w-full rounded-sm border border-hairline bg-bg px-3.5 py-2 text-[0.9375rem] text-forest outline-none transition-colors placeholder:text-muted/70 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-accent/45 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-60",
             className
           )}
           {...props}
@@ -257,7 +280,7 @@ const TableHeader = forwardRef<HTMLTableSectionElement, TableHeaderProps>(
     return (
       <thead
         ref={ref}
-        className={clsx("[&_tr]:border-b", className)}
+        className={clsx("[&_tr]:border-b [&_tr]:border-hairline-soft", className)}
         {...props}
       >
         {children}
@@ -292,7 +315,7 @@ const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
       <tr
         ref={ref}
         className={clsx(
-          "border-b transition-colors hover:bg-gray-50",
+          "border-b border-hairline-soft transition-colors hover:bg-surface",
           className
         )}
         {...props}
@@ -312,7 +335,7 @@ const TableHead = forwardRef<HTMLTableCellElement, TableHeadProps>(
       <th
         ref={ref}
         className={clsx(
-          "h-12 px-4 text-left align-middle font-medium text-gray-500 [&:has([role=checkbox])]:pr-0",
+          "h-12 px-4 text-left align-middle font-mono text-label uppercase text-muted [&:has([role=checkbox])]:pr-0",
           className
         )}
         {...props}
@@ -332,7 +355,7 @@ const TableCell = forwardRef<HTMLTableCellElement, TableCellProps>(
       <td
         ref={ref}
         className={clsx(
-          "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+          "p-4 align-middle text-forest [&:has([role=checkbox])]:pr-0",
           className
         )}
         {...props}
@@ -384,7 +407,7 @@ const RadioGroupItem = forwardRef<HTMLInputElement, RadioGroupItemProps>(
           type="radio"
           id={id}
           className={clsx(
-            "h-4 w-4 border-grey-30 text-primary focus:ring-primary",
+            "size-[1.125rem] border-hairline text-primary accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
             className
           )}
           {...props}
@@ -414,7 +437,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           type="checkbox"
           id={id}
           className={clsx(
-            "h-4 w-4 rounded border-grey-30 text-primary focus:ring-primary",
+            "size-[1.125rem] rounded-sm border-hairline text-primary accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
             className
           )}
           {...props}

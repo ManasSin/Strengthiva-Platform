@@ -33,23 +33,49 @@ module.exports = {
           80: "#1F2937",
           90: "#111827",
         },
-        // Same tokens as app.strengthiva.com (docs/platform-architecture/
-        // tech-specs/store-frontend/integration-notes.md's "Design tokens" section).
-        primary: "#0C6B36",
-        secondary: "#FE6B01",
-        tertiary: "#F4EBD0",
-        brandneutral: "#1A1C1A",
+        // Strengthiva brand palette — the 2026-08 rebrand. Values live as RGB
+        // channels in src/styles/globals.css (:root) and are wired up here with
+        // the <alpha-value> slot so opacity modifiers (bg-surface/60,
+        // text-forest/70) actually resolve. See that file's header for why the
+        // two apps duplicate rather than share this list.
+        bg: "rgb(var(--brand-bg) / <alpha-value>)",
+        surface: "rgb(var(--brand-surface) / <alpha-value>)",
+        "surface-2": "rgb(var(--brand-surface-2) / <alpha-value>)",
+        forest: "rgb(var(--brand-fg) / <alpha-value>)",
+        muted: "rgb(var(--brand-muted) / <alpha-value>)",
+        hairline: "rgb(var(--brand-hairline) / <alpha-value>)",
+        accent: "rgb(var(--brand-sage) / <alpha-value>)",
+        "accent-hover": "rgb(var(--brand-sage-hover) / <alpha-value>)",
+        "accent-soft": "rgb(var(--brand-sage-soft) / <alpha-value>)",
+        primary: "rgb(var(--brand-primary) / <alpha-value>)",
+        secondary: "rgb(var(--brand-secondary) / <alpha-value>)",
+        tertiary: "rgb(var(--brand-tertiary) / <alpha-value>)",
+        brandneutral: "rgb(var(--brand-neutral) / <alpha-value>)",
+        danger: "rgb(var(--brand-danger) / <alpha-value>)",
+      },
+      borderColor: {
+        // The hairline system: 1px of the foreground at 12% (brand-spec rule 4).
+        DEFAULT: "rgb(var(--brand-hairline) / 0.12)",
+        hairline: "rgb(var(--brand-hairline) / 0.12)",
+        "hairline-soft": "rgb(var(--brand-hairline) / 0.08)",
+      },
+      boxShadow: {
+        hairline: "var(--brand-shadow-hairline)",
+        soft: "var(--brand-shadow-soft)",
+        lifted: "var(--brand-shadow-lifted)",
       },
       borderRadius: {
         none: "0px",
         soft: "2px",
         base: "4px",
         rounded: "8px",
+        // Matched to the app's radius scale (8 / 14 / 22 / 28 / full) so a card
+        // looks the same on both origins.
+        md: "14px",
         large: "16px",
+        lg: "22px",
+        xl: "28px",
         circle: "9999px",
-      },
-      maxWidth: {
-        "8xl": "100rem",
       },
       screens: {
         "2xsmall": "320px",
@@ -62,10 +88,22 @@ module.exports = {
       },
       fontSize: {
         "3xl": "2rem",
+        // Display scale, shared with the app. Newsreader at 400 with negative
+        // tracking that tightens as the size grows (brand-spec rule 3); the
+        // 88px step is the Nexura display-lg slot.
+        display: ["5.5rem", { lineHeight: "0.84", letterSpacing: "-0.065em" }],
+        "display-sm": ["4.5rem", { lineHeight: "0.92", letterSpacing: "-0.045em" }],
+        hero: ["3.5rem", { lineHeight: "1.02", letterSpacing: "-0.03em" }],
+        title: ["2.5rem", { lineHeight: "1.06", letterSpacing: "-0.022em" }],
+        heading: ["1.625rem", { lineHeight: "1.15", letterSpacing: "-0.018em" }],
+        subhead: ["1.25rem", { lineHeight: "1.25", letterSpacing: "-0.012em" }],
+        // DM Mono label style — uppercase, wide tracking.
+        eyebrow: ["0.719rem", { lineHeight: "1.1", letterSpacing: "0.14em" }],
+        label: ["0.656rem", { lineHeight: "1.2", letterSpacing: "0.1em" }],
       },
       fontFamily: {
         sans: [
-          "var(--font-plus-jakarta-sans)",
+          "var(--font-dm-sans)",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
@@ -74,13 +112,16 @@ module.exports = {
           "Ubuntu",
           "sans-serif",
         ],
-        headline: [
-          "var(--font-manrope)",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "sans-serif",
-        ],
+        // `headline` kept as an alias of the display face so the existing
+        // `font-headline` call sites across the storefront keep resolving
+        // through the rebrand instead of silently dropping to sans.
+        headline: ["var(--font-newsreader)", "Georgia", "serif"],
+        display: ["var(--font-newsreader)", "Georgia", "serif"],
+        mono: ["var(--font-dm-mono)", "SFMono-Regular", "Consolas", "monospace"],
+      },
+      maxWidth: {
+        "8xl": "100rem",
+        measure: "72.5rem",
       },
       keyframes: {
         ring: {

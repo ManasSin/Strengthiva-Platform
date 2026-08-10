@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       <MarketingNav />
       <main className="flex-1">
         <div className="mx-auto max-w-3xl px-6 py-16">
-          <h1 className="font-headline text-3xl font-bold text-foreground">Privacy Policy</h1>
+          <h1 className="text-[clamp(1.875rem,4vw,2.5rem)]">Privacy Policy</h1>
           <p className="mt-2 text-sm text-muted-foreground">Last updated: draft, not yet published</p>
 
           <div className="mt-8">
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
           <div className="space-y-8 text-sm leading-relaxed text-foreground">
             <section>
-              <h2 className="font-headline text-lg font-semibold">What we collect</h2>
+              <h2 className="text-subhead">What we collect</h2>
               <p className="mt-2 text-muted-foreground">
                 Account details (name, email) via our authentication provider; your health
                 assessment answers; any prescription images you upload and the information we
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
               </p>
             </section>
             <section>
-              <h2 className="font-headline text-lg font-semibold">How we use it</h2>
+              <h2 className="text-subhead">How we use it</h2>
               <p className="mt-2 text-muted-foreground">
                 To generate your personalised dosha analysis, diet plan, and product
                 recommendations; to pre-fill assessment fields from an uploaded prescription;
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
               </p>
             </section>
             <section>
-              <h2 className="font-headline text-lg font-semibold">What we don&apos;t do</h2>
+              <h2 className="text-subhead">What we don&apos;t do</h2>
               <p className="mt-2 text-muted-foreground">
                 We do not sell your health information. We do not share your assessment
                 answers or prescription data with anyone other than the service providers
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
               </p>
             </section>
             <section>
-              <h2 className="font-headline text-lg font-semibold">Your rights</h2>
+              <h2 className="text-subhead">Your rights</h2>
               <p className="mt-2 text-muted-foreground">
                 You can request a copy of your data or ask us to delete your account and
                 associated data by contacting{" "}

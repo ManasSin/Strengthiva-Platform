@@ -62,7 +62,7 @@ export default async function VerifyPage(props: Props) {
           </Text>
         </div>
 
-        <div className="bg-white rounded-lg border p-6 flex flex-col gap-y-4">
+        <div className="bg-bg rounded-lg border p-6 flex flex-col gap-y-4">
           <div>
             <Text className="text-gray-500 text-sm">Batch number</Text>
             <Text className="text-lg font-medium">{data.batch_number}</Text>
@@ -82,7 +82,7 @@ export default async function VerifyPage(props: Props) {
           {data.certificates.map((cert) => (
             <div
               key={cert.id}
-              className="bg-white rounded-lg border p-4 flex flex-col gap-y-3"
+              className="bg-bg rounded-lg border p-4 flex flex-col gap-y-3"
             >
               <div className="flex items-center justify-between gap-4">
                 <Text className="font-medium">{cert.original_filename}</Text>

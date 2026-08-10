@@ -7,7 +7,7 @@ export default function AdminHomePage() {
       <div className="grid grid-cols-2 gap-4">
         <Link
           href="/admin/knowledge-base"
-          className="rounded-lg border bg-white p-6 hover:border-gray-400"
+          className="rounded-lg border bg-background p-6 hover:border-gray-400"
         >
           <div className="font-medium">Knowledge Base</div>
           <div className="text-sm text-gray-500 mt-1">
@@ -16,7 +16,7 @@ export default function AdminHomePage() {
         </Link>
         <Link
           href="/admin/batch-certificates"
-          className="rounded-lg border bg-white p-6 hover:border-gray-400"
+          className="rounded-lg border bg-background p-6 hover:border-gray-400"
         >
           <div className="font-medium">Batch Certificates</div>
           <div className="text-sm text-gray-500 mt-1">
@@ -25,7 +25,7 @@ export default function AdminHomePage() {
         </Link>
         <Link
           href="/admin/questionnaire"
-          className="rounded-lg border bg-white p-6 hover:border-gray-400"
+          className="rounded-lg border bg-background p-6 hover:border-gray-400"
         >
           <div className="font-medium">Questionnaire</div>
           <div className="text-sm text-gray-500 mt-1">
@@ -35,7 +35,7 @@ export default function AdminHomePage() {
         </Link>
         <Link
           href="/admin/products"
-          className="rounded-lg border bg-white p-6 hover:border-gray-400"
+          className="rounded-lg border bg-background p-6 hover:border-gray-400"
         >
           <div className="font-medium">Products</div>
           <div className="text-sm text-gray-500 mt-1">

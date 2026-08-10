@@ -144,7 +144,7 @@ function StepMetadataEditor({
     JSON.stringify(rule) !== JSON.stringify(step.visibility_rule);
 
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div className="rounded-lg border bg-background p-4">
       <div className="mb-2 text-xs text-gray-400">
         key: {step.key} (immutable) · type: {step.step_type} (immutable)
       </div>
@@ -276,7 +276,7 @@ function QuestionRow({
   }
 
   return (
-    <div className={`rounded-lg border bg-white p-3 ${!question.active ? "opacity-50" : ""}`}>
+    <div className={`rounded-lg border bg-background p-3 ${!question.active ? "opacity-50" : ""}`}>
       <div className="flex items-center justify-between">
         <button className="flex-1 text-left" onClick={() => setExpanded((v) => !v)}>
           <span className="font-medium">{question.label}</span>{" "}
@@ -557,7 +557,7 @@ function AddQuestionForm({
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-background p-4">
       <label className="text-xs text-gray-500">
         field_key (stable, e.g. my-new-field)
         <input
