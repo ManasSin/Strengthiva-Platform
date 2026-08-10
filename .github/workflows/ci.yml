@@ -1,0 +1,123 @@
+# CI/CD for strengthiva-platform (app + store + medusa).
+#
+# Checks run on every push and PR. Deploy runs ONLY on a push to main, and only if the
+# checks passed — `needs: check` is what enforces that.
+#
+# Deploy model: build on the VPS. GitHub SSHes in, fast-forwards /opt/strengthiva-platform
+# to origin/main, and runs the repo's own scripts/deploy.sh (rollback image, Medusa
+# migrations when relevant, health gate, auto-rollback — see that file).
+#
+# Only the services whose files actually changed get rebuilt. A Next.js build of both
+# apps on this VPS takes 15-35 minutes, so rebuilding the storefront because a backend
+# route changed is the difference between a 10-minute deploy and a 35-minute one.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: "Services to deploy (space-separated: app store medusa)"
+        required: false
+        default: "app store"
+
+concurrency:
+  group: platform-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck app
+        run: pnpm --filter @strengthiva/app exec tsc --noEmit
+
+      - name: Typecheck store
+        run: pnpm --filter @strengthiva/store exec tsc --noEmit
+
+      - name: Lint app
+        run: pnpm --filter @strengthiva/app lint
+        # apps/store is deliberately not linted: it ships an ESLint 8 .eslintrc.json with
+        # ESLint 9 installed, and its lint script calls `next lint`, which Next 16
+        # removed. Pre-existing; fixing it is its own change, and a permanently-red step
+        # trains everyone to ignore this workflow.
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need the previous commit to diff against for change detection.
+          fetch-depth: 2
+
+      - name: Decide which services to rebuild
+        id: which
+        run: |
+          if [ -n "${{ github.event.inputs.services }}" ]; then
+            echo "services=${{ github.event.inputs.services }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only HEAD^ HEAD || echo "")
+          svcs=""
+          # Anything shared (root config, lockfile, the deploy script itself) forces both
+          # Next apps — a change to the workspace or Tailwind preset can alter either
+          # bundle, and guessing wrong here ships a stale UI.
+          if echo "$changed" | grep -qE '^(package.json|pnpm-lock.yaml|pnpm-workspace.yaml|\.npmrc|docker-compose.prod.yml|scripts/deploy.sh)'; then
+            svcs="app store"
+          else
+            echo "$changed" | grep -q '^apps/app/'   && svcs="$svcs app"
+            echo "$changed" | grep -q '^apps/store/' && svcs="$svcs store"
+            echo "$changed" | grep -q '^apps/medusa/' && svcs="$svcs medusa"
+          fi
+          svcs=$(echo "$svcs" | xargs)
+          echo "services=$svcs" >> "$GITHUB_OUTPUT"
+          echo "Will deploy: '${svcs:-(nothing)}'"
+
+      - name: Deploy over SSH
+        if: steps.which.outputs.services != ''
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+          SERVICES: ${{ steps.which.outputs.services }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no "$VPS_USER@$VPS_HOST" \
+            "set -euo pipefail
+             cd /opt/strengthiva-platform
+             git fetch --prune origin
+             git reset --hard origin/main
+             bash scripts/deploy.sh $SERVICES"
+
+      - name: Nothing to deploy
+        if: steps.which.outputs.services == ''
+        run: echo "No app/store/medusa files changed — skipping deploy."
+
+      - name: Report what is live
+        if: always()
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no "$VPS_USER@$VPS_HOST" \
+            'cd /opt/strengthiva-platform && echo "deployed sha: $(cat .deployed-sha 2>/dev/null || echo unknown)" && docker ps --format "{{.Names}}\t{{.Status}}" | grep strengthiva-platform'
