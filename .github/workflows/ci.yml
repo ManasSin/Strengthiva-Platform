@@ -33,9 +33,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` here on purpose — package.json already pins
+      # "packageManager": "pnpm@11.9.0", and specifying both makes the action refuse to
+      # run ("Multiple versions of pnpm specified"). Letting it read packageManager also
+      # means CI can never drift from the version everyone builds with locally.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
