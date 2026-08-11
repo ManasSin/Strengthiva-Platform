@@ -31,21 +31,37 @@ export function FieldRenderer({
   const describedBy = field.sublabel ? `${fieldId}-hint` : undefined;
 
   return (
-    <div className="mb-7 last:mb-0">
+    // Spacing here is doing the grouping work, so the three gaps are set
+    // relative to each other rather than picked independently:
+    //   question -> its options   6px  (mb-1.5, plus leading-snug on the label)
+    //   option   -> option        8px  (gap-2 on the grids below)
+    //   question -> next question 40px (this mb-10)
+    //
+    // What it replaces: 8px / 10px / 28px. Two problems with that. The label sat
+    // in a 24px line box for 15px text, so ~4.5px of leading landed on top of
+    // its 8px margin and the question read as detached from the options it
+    // belongs to. And 28px between questions against 10px between option rows
+    // is only ~3x — not enough contrast to say "new question", so a long section
+    // read as one undifferentiated stack of pills. 40:8 makes the boundary
+    // obvious without needing a rule or a card per question.
+    <div className="mb-10 last:mb-0">
       <label
         htmlFor={fieldId}
-        className="mb-2 block text-[0.9375rem] font-medium text-foreground"
+        className="mb-1.5 block text-base font-semibold leading-snug text-foreground"
       >
         {field.label}
         {field.required && (
-          <span className="ml-1 text-destructive" aria-hidden>
+          <span className="ml-1 font-normal text-destructive" aria-hidden>
             *
           </span>
         )}
         {field.required && <span className="sr-only"> (required)</span>}
       </label>
       {field.sublabel && (
-        <p id={describedBy} className="mb-2.5 text-[0.84375rem] text-muted-foreground">
+        <p
+          id={describedBy}
+          className="mb-2 -mt-0.5 text-[0.84375rem] leading-snug text-muted-foreground"
+        >
           {field.sublabel}
         </p>
       )}
@@ -106,7 +122,7 @@ export function FieldRenderer({
       )}
 
       {field.type === "radio" && (
-        <div className={`grid grid-cols-1 gap-2.5 ${gridCols}`} role="group" aria-labelledby={fieldId}>
+        <div className={`grid grid-cols-1 gap-2 ${gridCols}`} role="group" aria-labelledby={fieldId}>
           {field.options?.map((opt) => (
             <OptionCard
               key={opt.value}
@@ -119,7 +135,7 @@ export function FieldRenderer({
       )}
 
       {field.type === "checkbox-group" && (
-        <div className={`grid grid-cols-1 gap-2.5 ${gridCols}`} role="group" aria-labelledby={fieldId}>
+        <div className={`grid grid-cols-1 gap-2 ${gridCols}`} role="group" aria-labelledby={fieldId}>
           {field.options?.map((opt) => {
             const current = (value as string[] | undefined) ?? [];
             const isSelected = current.includes(opt.value);

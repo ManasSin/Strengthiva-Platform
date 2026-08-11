@@ -107,9 +107,15 @@ export function BmiField({
                     : "Obese III";
 
   return (
-    <div className="mb-6">
-      <label className="mb-1.5 block text-sm font-medium text-foreground">
-        Height, Weight &amp; BMI<span className="ml-1 text-destructive" aria-hidden>*</span>
+    // Same block rhythm and question weight as FieldRenderer — this renders
+    // inline among the real questions, so a lighter label made it read as a
+    // sub-part of whatever question preceded it rather than a question itself.
+    <div className="mb-10">
+      <label className="mb-1.5 block text-base font-semibold leading-snug text-foreground">
+        Height, Weight &amp; BMI
+        <span className="ml-1 font-normal text-destructive" aria-hidden>
+          *
+        </span>
       </label>
       <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
         <div>
