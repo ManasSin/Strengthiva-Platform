@@ -31,20 +31,25 @@ export function FieldRenderer({
   const describedBy = field.sublabel ? `${fieldId}-hint` : undefined;
 
   return (
-    // Spacing here is doing the grouping work, so the three gaps are set
-    // relative to each other rather than picked independently:
-    //   question -> its options   6px  (mb-1.5, plus leading-snug on the label)
-    //   option   -> option        8px  (gap-2 on the grids below)
-    //   question -> next question 40px (this mb-10)
+    // No outer margin on purpose — the gap BETWEEN questions belongs to the
+    // container (wizard.tsx renders these into a `space-y-10` stack).
     //
-    // What it replaces: 8px / 10px / 28px. Two problems with that. The label sat
-    // in a 24px line box for 15px text, so ~4.5px of leading landed on top of
-    // its 8px margin and the question read as detached from the options it
-    // belongs to. And 28px between questions against 10px between option rows
-    // is only ~3x — not enough contrast to say "new question", so a long section
-    // read as one undifferentiated stack of pills. 40:8 makes the boundary
-    // obvious without needing a rule or a card per question.
-    <div className="mb-10 last:mb-0">
+    // This used to be `mb-10 last:mb-0`, which silently produced zero gap on
+    // every question: the wizard wraps each field in its own <div> so the BMI
+    // composite can be injected before its anchor, which made every
+    // FieldRenderer root the ONLY child of its wrapper — so `last:` matched all
+    // of them, not just the final one. A child owning its own outside spacing
+    // through a positional variant is only correct if you also control how the
+    // parent wraps it; the container owning it can't be defeated that way.
+    //
+    // Inside a question the rhythm is:
+    //   label -> its control   6px (mb-1.5, plus leading-snug so the label's
+    //                          own line-height leading doesn't pad it further)
+    //   option -> option       8px (gap-2 on the grids below)
+    // against 40px between questions — a 5x step at the boundary, which is what
+    // makes each question read as one group rather than the whole section
+    // reading as an undifferentiated stack of pills.
+    <div>
       <label
         htmlFor={fieldId}
         className="mb-1.5 block text-base font-semibold leading-snug text-foreground"

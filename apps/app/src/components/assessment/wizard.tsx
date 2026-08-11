@@ -397,21 +397,43 @@ export function AssessmentWizard({
                     )}
                   </div>
 
-                  {fields.map((field, index) => (
-                    <div key={field.id}>
-                      {/* BMI is a composite (height + weight) not representable as a single
-                          FieldDef — inserted right before the section's anchor question
-                          (bmiInsertBeforeFieldKey, seeded as "occupation" on basic-info).
-                          Falls back to rendering first in the section if that question is
-                          missing (e.g. an admin deleted/renamed it), rather than silently
-                          dropping BMI from the form entirely. */}
-                      {bmiAnchorFieldKey &&
-                        (bmiAnchorPresent ? field.id === bmiAnchorFieldKey : index === 0) && (
-                          <BmiField answers={answers} onChange={handleFieldChange} />
-                        )}
-                      <FieldRenderer field={field} answers={answers} onChange={handleFieldChange} />
-                    </div>
-                  ))}
+                  {/* One flat, evenly-spaced stack. `space-y-10` here is what
+                      separates questions — the children deliberately carry no
+                      margin of their own.
+
+                      flatMap, not map-with-a-wrapper: wrapping each field in
+                      its own <div> so BmiField could be injected before its
+                      anchor made every FieldRenderer root an only child, which
+                      silently defeated the `last:mb-0` those roots used to
+                      carry and collapsed the gap between every question to
+                      zero. Emitting BmiField and FieldRenderer as real siblings
+                      means the container's spacing applies to both and can't be
+                      broken by how a field happens to be nested. */}
+                  <div className="space-y-10">
+                    {fields.flatMap((field, index) => {
+                      // BMI is a composite (height + weight) not representable as a single
+                      // FieldDef — inserted right before the section's anchor question
+                      // (bmiInsertBeforeFieldKey, seeded as "occupation" on basic-info).
+                      // Falls back to rendering first in the section if that question is
+                      // missing (e.g. an admin deleted/renamed it), rather than silently
+                      // dropping BMI from the form entirely.
+                      const showBmi =
+                        !!bmiAnchorFieldKey &&
+                        (bmiAnchorPresent ? field.id === bmiAnchorFieldKey : index === 0);
+
+                      return [
+                        ...(showBmi
+                          ? [<BmiField key="bmi" answers={answers} onChange={handleFieldChange} />]
+                          : []),
+                        <FieldRenderer
+                          key={field.id}
+                          field={field}
+                          answers={answers}
+                          onChange={handleFieldChange}
+                        />,
+                      ];
+                    })}
+                  </div>
                 </section>
               );
             })}

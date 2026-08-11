@@ -3,6 +3,14 @@
 import { useState } from "react";
 import type { Answers } from "@/lib/questionnaire-types";
 
+// Matches the height, radius, border and focus treatment of FieldRenderer's
+// `controlClass`. These three inputs sat at 38px on a form where every other
+// control is 44px, so the BMI row read as a lesser, denser thing wedged into
+// the middle of the questions — and 38px is under the touch-target minimum.
+// `pr-8` leaves room for the absolutely-positioned unit suffix.
+const numberInputClass =
+  "h-11 w-full rounded-sm border border-input bg-background pl-3.5 pr-8 text-[0.9375rem] text-foreground transition-colors outline-none placeholder:text-muted-foreground/70 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-accent/45";
+
 // Height/Weight/BMI composite.
 //
 // Height is ENTERED as feet + inches (what Indian patients actually know their height
@@ -107,73 +115,91 @@ export function BmiField({
                     : "Obese III";
 
   return (
-    // Same block rhythm and question weight as FieldRenderer — this renders
-    // inline among the real questions, so a lighter label made it read as a
-    // sub-part of whatever question preceded it rather than a question itself.
-    <div className="mb-10">
+    // Same question weight as FieldRenderer, and no outer margin — the gap to
+    // the next question is owned by the wizard's `space-y-10` stack.
+    <div data-slot="bmi-field">
       <label className="mb-1.5 block text-base font-semibold leading-snug text-foreground">
         Height, Weight &amp; BMI
         <span className="ml-1 font-normal text-destructive" aria-hidden>
           *
         </span>
       </label>
-      <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+      {/* Each column is a self-contained label+control block, and `items-start`
+          aligns them by their tops — which is what keeps the three sub-labels on
+          one line. It was `items-end` on a single row before, so the columns
+          were bottom-aligned and the "162.6 cm" readout under the height inputs
+          made that column taller, pushing "Weight (kg)" visibly below "Height".
+
+          Stacks to one column below `sm`: at 375px the three-up grid squeezed
+          the ft/in fields to 46px wide, which is not a usable number input. */}
+      <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-[1fr_1fr_auto] sm:items-start sm:gap-y-0">
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Height</label>
-          <div className="flex items-end gap-2">
-            <div className="relative flex-1">
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="5"
-                min={1}
-                max={8}
-                aria-label="Height in feet"
-                value={feet}
-                onChange={(e) => updateHeight(e.target.value, inches)}
-                className="w-full rounded-lg border border-border py-2 pl-3 pr-8 text-sm focus:border-primary focus:outline-none"
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                ft
-              </span>
-            </div>
-            <div className="relative flex-1">
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="4"
-                min={0}
-                max={11}
-                aria-label="Height in inches"
-                value={inches}
-                onChange={(e) => updateHeight(feet, e.target.value)}
-                className="w-full rounded-lg border border-border py-2 pl-3 pr-8 text-sm focus:border-primary focus:outline-none"
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                in
-              </span>
-            </div>
+          <span className="mb-1 block text-xs text-muted-foreground">Height</span>
+          <div className="flex items-start gap-2">
+            {[
+              { unit: "ft", label: "Height in feet", ph: "5", min: 1, max: 8, value: feet,
+                set: (v: string) => updateHeight(v, inches) },
+              { unit: "in", label: "Height in inches", ph: "4", min: 0, max: 11, value: inches,
+                set: (v: string) => updateHeight(feet, v) },
+            ].map((f) => (
+              <div key={f.unit} className="relative flex-1">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder={f.ph}
+                  min={f.min}
+                  max={f.max}
+                  aria-label={f.label}
+                  value={f.value}
+                  onChange={(e) => f.set(e.target.value)}
+                  className={numberInputClass}
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {f.unit}
+                </span>
+              </div>
+            ))}
           </div>
           {heightCm > 0 && (
             <div className="mt-1 text-[10px] text-muted-foreground">{heightCm} cm</div>
           )}
         </div>
+
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Weight (kg)</label>
+          <span className="mb-1 block text-xs text-muted-foreground">Weight (kg)</span>
           <input
             type="number"
+            inputMode="numeric"
             placeholder="e.g. 68"
+            aria-label="Weight in kilograms"
             min={10}
             max={300}
             value={(answers["weight-kg"] as string) || ""}
             onChange={(e) => onChange("weight-kg", e.target.value)}
-            className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            className={numberInputClass}
           />
         </div>
+
         {bmi !== null && (
-          <div className="rounded-lg bg-primary/10 px-3 py-2 text-center">
-            <div className="font-display text-xl text-primary">{bmi.toFixed(1)}</div>
-            <div className="text-[10px] text-muted-foreground">{category}</div>
+          <div>
+            {/* A real third sub-label rather than a spacer: it keeps the badge
+                on the same baseline as the other two columns AND says what the
+                number is, which nothing did before. */}
+            <span className="mb-1 block text-xs text-muted-foreground">BMI</span>
+            {/* Polite live region — it recalculates as height/weight are typed,
+                and it is the one derived value on the form a screen-reader user
+                would otherwise never hear. */}
+            <div
+              aria-live="polite"
+              className="flex h-11 min-w-[4.5rem] flex-col items-center justify-center rounded-lg bg-primary/10 px-3"
+            >
+              <span className="font-display text-lg leading-none text-primary">
+                {bmi.toFixed(1)}
+              </span>
+              <span className="mt-0.5 text-[10px] leading-none text-muted-foreground">
+                {category}
+              </span>
+            </div>
           </div>
         )}
       </div>
