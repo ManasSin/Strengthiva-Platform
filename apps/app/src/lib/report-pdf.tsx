@@ -497,11 +497,18 @@ function statusFlag(resolution: ResolvedProduct["resolution"]) {
 export function ReportDocument({ report }: { report: ReportResponse }) {
   const hero = parseDoshaHero(report.dosha);
   const diet = parseDietPlan(report.diet);
-  const issued = new Date(report.created_at || Date.now()).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  // No Date.now() fallback here. Two reasons: calling it during render is impure, so
+  // the same report could render a different date on a re-render; and created_at is a
+  // required field, so falling back to "today" would quietly stamp the PDF with a date
+  // that isn't the issue date. If it is ever genuinely missing, say so rather than
+  // inventing one.
+  const issued = report.created_at
+    ? new Date(report.created_at).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "—";
 
   return (
     <Document
