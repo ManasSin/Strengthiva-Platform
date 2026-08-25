@@ -143,10 +143,14 @@ export default function KnowledgeBasePage() {
             )}
           </div>
           <div className="mt-4">
+            {/* Must stay in step with _allowed in strengthiva-backend/app/routers/
+                test_admin.py — the server accepts .json, and omitting it here is what
+                greyed the structured diet-plan files out in the file picker even though
+                the upload itself would have worked. */}
             <input
               type="file"
               multiple
-              accept=".pdf,.docx,.doc"
+              accept=".pdf,.docx,.doc,.json,application/json"
               disabled={uploading === value}
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
