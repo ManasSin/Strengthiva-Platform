@@ -5,8 +5,7 @@ import type { ReactNode } from "react";
 import { MarketingNav } from "@/components/layout/nav";
 import { cn } from "@/lib/utils";
 
-// Shared chrome for the three-step assessment flow — Upload · Questions · Your
-// plan. Introduced in the 2026-08 rebrand: docs/redesign's upload, assessment,
+// Shared chrome for the assessment flow — Upload · Questions · Photo · Your plan. Introduced in the 2026-08 rebrand: docs/redesign's upload, assessment,
 // report-confirmation and output screenshots all show the same sage-surface
 // shell, back link and stepper, and before this each of those four pages
 // open-coded its own header with slightly different spacing.
@@ -15,17 +14,24 @@ export type FlowStepState = "done" | "current" | "todo";
 
 // `note` is declared on the element type rather than inferred per-entry, so the
 // two steps that omit it still narrow to a shape that has the key.
-const FLOW_STEPS: readonly { id: "upload" | "questions" | "plan"; label: string; note?: string }[] =
-  [
-    { id: "upload", label: "Upload", note: "optional" },
-    { id: "questions", label: "Questions" },
-    { id: "plan", label: "Your plan" },
-  ];
+const FLOW_STEPS: readonly {
+  id: "upload" | "questions" | "photo" | "plan";
+  label: string;
+  note?: string;
+}[] = [
+  { id: "upload", label: "Upload", note: "optional" },
+  { id: "questions", label: "Questions" },
+  // Sits after the answers are submitted, not before: the report starts generating
+  // the moment the questionnaire is done, and this step is what the user does while
+  // that runs. Genuinely optional — skipping goes straight to the plan.
+  { id: "photo", label: "Photo", note: "optional" },
+  { id: "plan", label: "Your plan" },
+];
 
 export type FlowStepId = (typeof FLOW_STEPS)[number]["id"];
 
 /**
- * Three-step progress rail.
+ * Progress rail.
  *
  * Semantics before ornament: it's an <ol>, the current step carries
  * `aria-current="step"`, and completed steps say so in text for a screen reader

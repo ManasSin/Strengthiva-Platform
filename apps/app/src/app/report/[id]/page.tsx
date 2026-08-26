@@ -55,6 +55,23 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  // Re-POST for the same assessment. The backend flips the existing `failed` row back
+  // to `pending` and regenerates into it rather than creating a second report, so the
+  // id — and therefore this URL — stays put.
+  async function handleRetry() {
+    if (!report) return;
+    setRetrying(true);
+    try {
+      await api.createReport(report.health_assessment_id);
+      setReport({ ...report, status: "pending" });
+    } catch {
+      setError("We couldn't restart your report. Please try again.");
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   async function handleDownloadPdf() {
     if (!report) return;
@@ -76,17 +93,43 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
+  // Poll while the report is still generating.
+  //
+  // POST /reports now returns a `pending` row immediately and generates in the
+  // background, so this page is reachable — and shareable, and resumable — before
+  // any content exists. That is the whole point: closing the tab or backgrounding
+  // the phone no longer loses the report, because the URL outlives the request that
+  // started it.
+  //
+  // 2s interval: generation is ~10-15s, so this is roughly six or seven cheap reads,
+  // and the DB row is already warm. Stops on ready or failed, and on unmount.
   useEffect(() => {
-    api
-      .getReport(id)
-      .then(setReport)
-      .catch((err) => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    async function poll() {
+      try {
+        const next = await api.getReport(id);
+        if (cancelled) return;
+        setReport(next);
+        if (next.status === "pending") {
+          timer = setTimeout(poll, 2000);
+        }
+      } catch (err) {
+        if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) {
           window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
           return;
         }
         setError("We couldn't load this report.");
-      });
+      }
+    }
+
+    void poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [id]);
 
   if (error) {
@@ -109,6 +152,59 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <div className="flex justify-center py-24">
           <div className="size-10 rounded-full border-[3px] border-border border-t-primary motion-safe:animate-spin" />
           <span className="sr-only">Loading your plan</span>
+        </div>
+      </FlowShell>
+    );
+  }
+
+  // Still generating. A named, addressable waiting state rather than a spinner over
+  // nothing: the user can leave this page, come back to the same URL, and find either
+  // this or the finished plan.
+  if (report.status === "pending") {
+    return (
+      <FlowShell step="plan" completed={["upload", "questions", "photo"]} width="wide">
+        <div className="mx-auto max-w-[34rem] py-20 text-center">
+          <div className="mx-auto size-12 rounded-full border-[3px] border-border border-t-primary motion-safe:animate-spin" />
+          <h1 className="mt-7 text-[clamp(1.5rem,3.4vw,1.875rem)]">
+            Reading your answers…
+          </h1>
+          <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
+            Working out your constitution and where it&rsquo;s currently out of balance.
+            This usually takes under a minute.
+          </p>
+          <p className="mt-5 text-[0.84375rem] leading-relaxed text-muted-foreground">
+            You can close this page — it&rsquo;s saved. Come back to this link any time,
+            or find it under{" "}
+            <Link href="/account/reports" className="link-quiet">
+              your reports
+            </Link>
+            .
+          </p>
+        </div>
+      </FlowShell>
+    );
+  }
+
+  // Generation failed, or the worker died mid-task and left the row behind. Either
+  // way the answers are safe — retrying re-runs generation into the same row, so the
+  // id and this URL survive.
+  if (report.status === "failed") {
+    return (
+      <FlowShell step="plan" completed={["upload", "questions", "photo"]} width="wide">
+        <div className="mx-auto max-w-[34rem] py-20 text-center">
+          <CircleAlert className="mx-auto size-8 text-destructive" strokeWidth={1.7} />
+          <h1 className="mt-6 text-[clamp(1.5rem,3.4vw,1.875rem)]">
+            That reading didn&rsquo;t finish.
+          </h1>
+          <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
+            Your answers are saved — nothing needs filling in again. Trying again picks
+            up from exactly here.
+          </p>
+          <div className="mt-7 flex justify-center">
+            <Button variant="default" disabled={retrying} onClick={handleRetry}>
+              {retrying ? "Starting…" : "Try again"}
+            </Button>
+          </div>
         </div>
       </FlowShell>
     );

@@ -66,18 +66,21 @@ function QuestionnaireContent() {
       .catch(() => setInitialAnswers({}));
   }, [prescriptionId]);
 
-  async function handleComplete(answers: Answers, photoKey: string | null) {
+  async function handleComplete(answers: Answers) {
     setSubmitting(true);
     setError(null);
     try {
       // Reuse the assessment from a previous failed attempt rather than creating a
       // second one for the same answers.
       const id =
-        assessmentId ??
-        (await api.createHealthAssessment(answers, prescriptionId ?? undefined, photoKey)).id;
+        assessmentId ?? (await api.createHealthAssessment(answers, prescriptionId ?? undefined)).id;
       setAssessmentId(id);
+      // Returns 202 with a `pending` report in milliseconds — generation runs in the
+      // background on the API. So the user goes straight to the optional photo step
+      // while the LLM work happens, instead of watching a spinner for 10-15s, and
+      // /report/{id} is a real address from this moment on.
       const report = await api.createReport(id);
-      router.push(`/report/${report.id}`);
+      router.push(`/assessment/photo?reportId=${report.id}&assessmentId=${id}`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         const redirect = prescriptionId
@@ -86,7 +89,7 @@ function QuestionnaireContent() {
         router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
-      setError("We couldn't generate your report. Please try again.");
+      setError("We couldn't start your report. Please try again.");
       setSubmitting(false);
     }
   }
@@ -99,7 +102,7 @@ function QuestionnaireContent() {
     setError(null);
     try {
       const report = await api.createReport(assessmentId);
-      router.push(`/report/${report.id}`);
+      router.push(`/assessment/photo?reportId=${report.id}&assessmentId=${assessmentId}`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         router.push(`/login?redirect=${encodeURIComponent("/assessment/questionnaire")}`);
@@ -110,18 +113,19 @@ function QuestionnaireContent() {
     }
   }
 
-  // Report generation is ~10-15s of LLM calls. Full-bleed status screen rather
-  // than a spinner over the form: there is nothing on the form worth looking at
-  // while it runs, and leaving it visible invited a second submit.
+  // Submitting is now two fast calls (create assessment, create pending report) —
+  // generation itself happens server-side after the 202. This screen is therefore
+  // brief; it exists to stop a second submit rather than to cover a long wait, which
+  // is what the photo step and the report page's pending state now do.
   if (submitting) {
     return (
       <>
         <MarketingNav />
         <main className="flex flex-1 flex-col items-center justify-center bg-leaf-motif px-6 py-24 text-center">
           <div className="size-12 rounded-full border-[3px] border-border border-t-primary motion-safe:animate-spin" />
-          <h1 className="mt-6 text-[1.75rem]">Reading your answers…</h1>
+          <h1 className="mt-6 text-[1.75rem]">Saving your answers…</h1>
           <p className="mt-2 text-[0.9375rem] text-muted-foreground">
-            Working out your constitution and where it&rsquo;s currently out of balance.
+            One moment — your reading starts generating as soon as this is in.
           </p>
         </main>
       </>

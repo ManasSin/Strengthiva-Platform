@@ -9,7 +9,6 @@ import { api, ApiError } from "@/lib/api-client";
 import { FieldRenderer } from "./field-renderer";
 import { BmiField } from "./bmi-field";
 import { PhoneVerification } from "./phone-verification";
-import { PhotoUpload } from "./photo-upload";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -48,6 +47,12 @@ function isAnswered(value: Answers[string] | undefined): boolean {
  * conditions are ticked (the step count was never fixed; it grows with the
  * conditions selected).
  *
+ * The optional self-photo used to live at the foot of this form. It now has its own
+ * step after submit (src/app/assessment/photo/page.tsx): report generation is ~10-15s
+ * of LLM work, and starting it the moment the answers are in — rather than after the
+ * user has finished choosing a photo — is what lets the two overlap. Nothing here
+ * depends on the photo; it never reaches the AI layer.
+ *
  * Mobile verification gates the entire form rather than sitting next to the name
  * field: the assessment is submitted to an authenticated endpoint, so on a single
  * page the alternative is letting someone fill in every answer and only then
@@ -68,7 +73,7 @@ export function AssessmentWizard({
   initialAnswers,
   banner,
 }: {
-  onComplete: (answers: Answers, photoKey: string | null) => void;
+  onComplete: (answers: Answers) => void;
   initialAnswers?: Answers;
   banner?: ReactNode;
 }) {
@@ -81,7 +86,6 @@ export function AssessmentWizard({
   // covered in red.
   const [showErrors, setShowErrors] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const [photoKey, setPhotoKey] = useState<string | null>(null);
   // Which sections have already been checkpointed, so a save fires once per section
   // rather than on every keystroke inside it.
   const savedStepsRef = useRef<Set<string>>(new Set());
@@ -248,7 +252,7 @@ export function AssessmentWizard({
       }
       return;
     }
-    onComplete(answers, photoKey);
+    onComplete(answers);
   }
 
   // Every branch below returns bare content — the page shell (nav, sage surface,
@@ -437,10 +441,6 @@ export function AssessmentWizard({
                 </section>
               );
             })}
-
-            {/* Offered last, after every question — it is optional and must not sit
-                between the user and finishing. */}
-            <PhotoUpload onPhotoKeyChange={setPhotoKey} />
           </div>
 
           {/* Submit row. The error message and the button are in one flex row

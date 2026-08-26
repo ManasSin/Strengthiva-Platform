@@ -6,8 +6,11 @@ import { Camera, CircleAlert, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 
-// Optional self-photo, offered at the very end of the assessment and shown beside the
-// summary on the report.
+// Optional self-photo, shown beside the reading on the report.
+//
+// Lives on its own step (src/app/assessment/photo/page.tsx) rather than at the foot of
+// the questionnaire: report generation starts the moment the answers are submitted, so
+// choosing a photo now overlaps the ~10-15s of LLM work instead of delaying its start.
 //
 // Uploaded immediately on selection rather than held until submit, for two reasons: the
 // upload is the slowest part of finishing (a phone photo is several MB), and doing it
@@ -77,25 +80,12 @@ export function PhotoUpload({
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  // Just the control — no card, no heading, no intro copy. Those belonged here when
+  // this was one section among many in the questionnaire; now that it owns a whole
+  // page, the page supplies them and rendering them again produced a heading inside a
+  // heading and the word "optional" twice on one screen.
   return (
-    <section
-      aria-labelledby="heading-photo"
-      className="scroll-mt-32 rounded-lg border border-border bg-background p-6 shadow-hairline sm:p-7"
-    >
-      <div className="mb-5 flex items-baseline justify-between gap-4 border-b border-hairline-soft pb-3">
-        <h2 id="heading-photo" className="text-[1.375rem]">
-          A photo of you
-        </h2>
-        <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.05em] text-muted-foreground">
-          Optional
-        </span>
-      </div>
-
-      <p className="mb-5 text-[0.9375rem] leading-relaxed text-muted-foreground">
-        If you&rsquo;d like, add a recent photo. It appears alongside your reading on your
-        plan. You can skip this &mdash; it won&rsquo;t change your recommendations.
-      </p>
-
+    <div>
       <div className="flex flex-wrap items-center gap-5">
         {preview ? (
           // Square here to match how it is displayed on the report, so what you pick is
@@ -152,6 +142,6 @@ export function PhotoUpload({
           )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

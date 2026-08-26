@@ -222,8 +222,14 @@ export type QuestionUpdatePayload = Partial<Omit<QuestionCreatePayload, "step_id
 export type OptionCreatePayload = { value: string; label: string; order_index?: number };
 export type OptionUpdatePayload = Partial<OptionCreatePayload> & { active?: boolean };
 
+export type ReportStatus = "pending" | "ready" | "failed";
+
 export type ReportListItem = {
   id: string;
+  // Lets a client that lost the create response find the report it just started,
+  // by matching on the assessment id it does still hold.
+  health_assessment_id: string;
+  status: ReportStatus;
   created_at: string;
   summary: string;
 };
@@ -246,6 +252,14 @@ export type OrderListItem = {
 
 export type ReportResponse = {
   id: string;
+  // Carried so the page can re-POST /reports to retry a failed generation without
+  // having kept the assessment id around.
+  health_assessment_id: string;
+  // A report is addressable the moment it is created, before any content exists —
+  // POST /reports returns 202 with `pending` in milliseconds and generates in the
+  // background. Branch on this: while pending, summary/dosha/diet are empty strings,
+  // not missing. See the backend's a7c1d9e40b23 migration for why.
+  status: ReportStatus;
   summary: string;
   dosha: string;
   diet: string;
@@ -284,6 +298,16 @@ export const api = {
         prescription_id: prescriptionId ?? null,
         photo_key: photoKey ?? null,
       }),
+    }),
+
+  // Attach an already-uploaded photo key to an existing assessment. Separate from
+  // createHealthAssessment because the photo is now chosen *after* submit, while the
+  // report generates — so the key and the answers are never in hand at the same time.
+  // A null key clears the photo.
+  attachAssessmentPhoto: (assessmentId: string, photoKey: string | null) =>
+    request<void>(`/api/v1/health-assessments/${assessmentId}/photo`, {
+      method: "PUT",
+      body: JSON.stringify({ photo_key: photoKey }),
     }),
 
   uploadPrescription: (file: File) => {
