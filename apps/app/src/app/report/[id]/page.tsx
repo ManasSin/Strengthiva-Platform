@@ -8,6 +8,7 @@ import {
   Download,
   Droplet,
   Flame,
+  Flower2,
   Sparkles,
   Star,
   Wind,
@@ -21,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/ui/markdown";
 import { Eyebrow } from "@/components/ui/label";
 import { parseDoshaHero } from "@/lib/dosha";
-import { parseDietPlan } from "@/lib/diet";
+import { isYogaLine, parseDietPlan, stripNoteLabel } from "@/lib/diet";
 import { cn } from "@/lib/utils";
 import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
 
@@ -464,13 +465,73 @@ function DietPlan({ markdown }: { markdown: string }) {
                 </li>
               ))}
             </ul>
+            {/* Why the meal's food is what it is — Benefits / Purpose / Focus.
+                Inside the same cell, but deliberately not in the <ul> above and
+                without the accent dot: it is not something to eat, and giving it
+                the same bullet made it read as another option. Smaller, muted and
+                separated by a hairline instead. */}
+            {slot.notes.length > 0 && (
+              <div className="mt-3.5 space-y-1.5 border-t border-hairline-soft pt-3">
+                {slot.notes.map((note, i) => (
+                  <SupportiveLine key={i} line={note} />
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {/* Day-wide advice — Objective, Doctor Tips. Full width UNDER the grid, not a
+          cell in it: these apply to the whole day, and as an equal cell they read as
+          if they were another meal. */}
+      {parsed.advice.map((section) => (
+        <div
+          key={section.label}
+          className="mt-3 rounded-lg border border-border bg-surface px-5 py-4"
+        >
+          <div className="mb-2.5 font-mono text-label uppercase text-muted-foreground">
+            {section.label}
+          </div>
+          <div className="space-y-1.5">
+            {[...section.items, ...section.notes].map((line, i) => (
+              <SupportiveLine key={i} line={line} />
+            ))}
+          </div>
+        </div>
+      ))}
+
       {parsed.note && (
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted-foreground">{parsed.note}</p>
       )}
     </>
+  );
+}
+
+/**
+ * One line of supportive (non-food) text.
+ *
+ * Its label ("Benefits:", "Purpose:") is rendered as a lead-in rather than
+ * repeated verbatim, and yoga/pranayama lines get a flower marker so they are
+ * findable at a glance among general advice.
+ */
+function SupportiveLine({ line }: { line: string }) {
+  const { label, text } = stripNoteLabel(line);
+  const yoga = isYogaLine(text);
+
+  return (
+    <p className="flex gap-2 text-[0.8125rem] leading-relaxed text-muted-foreground">
+      {yoga && (
+        <Flower2
+          aria-label="Yoga"
+          className="mt-0.5 size-3.5 shrink-0 text-primary"
+          strokeWidth={1.7}
+        />
+      )}
+      <span>
+        {label && <span className="font-medium text-foreground/70">{label}: </span>}
+        {text}
+      </span>
+    </p>
   );
 }
 
