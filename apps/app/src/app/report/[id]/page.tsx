@@ -312,14 +312,25 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               <Markdown className="text-[0.96875rem] leading-relaxed">{report.summary}</Markdown>
             </div>
             {report.photo_url && (
-              <div className="shrink-0 overflow-hidden rounded-md border border-border sm:aspect-square">
+              // The image is positioned ABSOLUTELY inside this box, which is the whole
+              // fix: in flow, a photo's intrinsic width becomes the flex item's base
+              // size, and `shrink-0` then refuses to shrink it back — so a 4000px phone
+              // photo made this column 4000px wide and broke the page. Out of flow, the
+              // box's size comes only from these classes, so the rendered size no longer
+              // depends on the file at all.
+              //
+              // Desktop: a fixed-width column whose HEIGHT stretches to match the summary
+              // card beside it (items-stretch on the parent). Mobile: a full-width square,
+              // since the row has stacked. `object-cover` crops the overflowing axis, so
+              // any aspect ratio fills the box completely without distortion.
+              <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-md border border-border sm:aspect-auto sm:w-48">
                 {/* eslint-disable-next-line @next/next/no-img-element -- served by FastAPI
                     behind an ownership check, not a statically optimisable asset;
                     next/image would need the API host in remotePatterns for no gain. */}
                 <img
                   src={report.photo_url}
                   alt="You, at the time of this assessment"
-                  className="size-full max-h-[18rem] object-cover sm:max-h-none"
+                  className="absolute inset-0 size-full object-cover"
                 />
               </div>
             )}
