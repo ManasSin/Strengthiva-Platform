@@ -13,7 +13,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import type { Root, RootContent, PhrasingContent } from "mdast";
 import type { ReportResponse, ResolvedProduct } from "@/lib/api-client";
-import { parseDietPlan } from "@/lib/diet";
+import { isYogaLine, parseDietPlan, stripNoteLabel } from "@/lib/diet";
 import { parseDoshaHero } from "@/lib/dosha";
 
 // The downloadable report.
@@ -278,6 +278,30 @@ const s = StyleSheet.create({
   dietItemText: { flex: 1, fontSize: 8.2, lineHeight: 1.45 },
   dietNote: { fontSize: 7.4, color: c.muted, marginTop: 8, lineHeight: 1.5 },
 
+  /* Supportive (non-food) text: meal Benefits/Purpose, and the day-wide advice
+     bands. Smaller and muted, with no bullet dot — it is not something to eat,
+     and matching the food bullets made it read as another option. */
+  dietSupport: {
+    fontSize: 7.2,
+    color: c.muted,
+    lineHeight: 1.45,
+    marginTop: 3,
+  },
+  dietSupportDivider: {
+    borderTopWidth: 0.5,
+    borderTopColor: c.hairline,
+    marginTop: 6,
+    paddingTop: 5,
+  },
+  adviceBand: {
+    borderWidth: 0.5,
+    borderColor: c.hairline,
+    borderRadius: 6,
+    padding: 10,
+    marginTop: 8,
+    backgroundColor: c.surface,
+  },
+
   /* Product cards */
   productCard: {
     borderWidth: 1,
@@ -494,6 +518,21 @@ function statusFlag(resolution: ResolvedProduct["resolution"]) {
 
 /* ── Document ──────────────────────────────────────────────────────────── */
 
+/**
+ * One supportive line for the PDF.
+ *
+ * react-pdf renders no SVG icon components, so the on-screen flower marker
+ * becomes a text glyph here rather than being dropped — the whole point of the
+ * marker is that yoga advice is findable at a glance, and that has to survive
+ * the download. The label is kept inline ("Benefits: …") because react-pdf has
+ * no cheap way to mix weights inside one wrapped paragraph.
+ */
+function pdfSupportLine(line: string): string {
+  const { label, text } = stripNoteLabel(line);
+  const body = label ? `${label}: ${text}` : text;
+  return isYogaLine(text) ? `❋  ${body}` : body;
+}
+
 export function ReportDocument({ report }: { report: ReportResponse }) {
   const hero = parseDoshaHero(report.dosha);
   const diet = parseDietPlan(report.diet);
@@ -588,9 +627,28 @@ export function ReportDocument({ report }: { report: ReportResponse }) {
                         <Text style={s.dietItemText}>{item}</Text>
                       </View>
                     ))}
+                    {slot.notes.length > 0 && (
+                      <View style={s.dietSupportDivider}>
+                        {slot.notes.map((note, i) => (
+                          <Text key={i} style={s.dietSupport}>
+                            {pdfSupportLine(note)}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 ))}
               </View>
+              {diet.advice.map((section) => (
+                <View key={section.label} style={s.adviceBand} wrap={false}>
+                  <Text style={s.dietSlot}>{section.label.toUpperCase()}</Text>
+                  {[...section.items, ...section.notes].map((line, i) => (
+                    <Text key={i} style={s.dietSupport}>
+                      {pdfSupportLine(line)}
+                    </Text>
+                  ))}
+                </View>
+              ))}
               {diet.note ? <Text style={s.dietNote}>{diet.note}</Text> : null}
             </>
           ) : (
