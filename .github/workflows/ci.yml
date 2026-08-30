@@ -131,8 +131,16 @@ jobs:
         if: steps.which.outputs.services == ''
         run: echo "No app/store/medusa files changed — skipping deploy."
 
+      # Diagnostics, not a gate. Two guards, both learned from a red run that had
+      # deployed nothing at all:
+      #   - skipped entirely when there was nothing to deploy, so a commit touching
+      #     only repo config doesn't SSH anywhere
+      #   - continue-on-error, because a transient SSH timeout while *reporting* must
+      #     never fail a workflow whose actual work succeeded. A pipeline that goes red
+      #     for reasons unrelated to the change is one people learn to ignore.
       - name: Report what is live
-        if: always()
+        if: always() && steps.which.outputs.services != ''
+        continue-on-error: true
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
