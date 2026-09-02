@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/ui/markdown";
 import { Eyebrow } from "@/components/ui/label";
 import { parseDoshaHero } from "@/lib/dosha";
-import { isYogaLine, parseDietPlan, stripNoteLabel } from "@/lib/diet";
+import { isYogaLine, parseDietPlan, stripNonVegLabel, stripNoteLabel } from "@/lib/diet";
 import { cn } from "@/lib/utils";
 import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
 
@@ -469,12 +469,24 @@ function DietPlan({ markdown }: { markdown: string }) {
           <div key={slot.label} className="bg-background p-5">
             <div className="mb-3 font-mono text-label uppercase text-primary">{slot.label}</div>
             <ul className="space-y-2">
-              {slot.items.map((item, i) => (
-                <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
-                  <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-accent" />
-                  {item}
-                </li>
-              ))}
+              {slot.items.map((item, i) => {
+                // A non-veg alternative renders as food, but tagged so it reads as a
+                // swap for the vegetarian item above it rather than a second dish.
+                const { isNonVeg, text } = stripNonVegLabel(item);
+                return (
+                  <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
+                    <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-accent" />
+                    <span>
+                      {isNonVeg && (
+                        <span className="mr-1.5 rounded bg-accent/10 px-1.5 py-0.5 align-middle font-mono text-[0.625rem] uppercase tracking-wide text-accent">
+                          Non-veg
+                        </span>
+                      )}
+                      {text}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
             {/* Why the meal's food is what it is — Benefits / Purpose / Focus.
                 Inside the same cell, but deliberately not in the <ul> above and

@@ -13,7 +13,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import type { Root, RootContent, PhrasingContent } from "mdast";
 import type { ReportResponse, ResolvedProduct } from "@/lib/api-client";
-import { isYogaLine, parseDietPlan, stripNoteLabel } from "@/lib/diet";
+import { isYogaLine, parseDietPlan, stripNonVegLabel, stripNoteLabel } from "@/lib/diet";
 import { parseDoshaHero } from "@/lib/dosha";
 
 // The downloadable report.
@@ -276,6 +276,14 @@ const s = StyleSheet.create({
     marginRight: 6,
   },
   dietItemText: { flex: 1, fontSize: 8.2, lineHeight: 1.45 },
+  /* Inline tag on a non-veg alternative item so it reads as a swap, not a second
+     dish — the print counterpart of the web report's "Non-veg" badge. */
+  dietNonVegTag: {
+    fontFamily: "Courier",
+    fontSize: 6.4,
+    color: c.primary,
+    letterSpacing: 0.4,
+  },
   dietNote: { fontSize: 7.4, color: c.muted, marginTop: 8, lineHeight: 1.5 },
 
   /* Supportive (non-food) text: meal Benefits/Purpose, and the day-wide advice
@@ -621,12 +629,18 @@ export function ReportDocument({ report }: { report: ReportResponse }) {
                 {diet.slots.map((slot) => (
                   <View key={slot.label} style={s.dietCell} wrap={false}>
                     <Text style={s.dietSlot}>{slot.label.toUpperCase()}</Text>
-                    {slot.items.map((item, i) => (
-                      <View key={i} style={s.dietItem}>
-                        <View style={s.dietDot} />
-                        <Text style={s.dietItemText}>{item}</Text>
-                      </View>
-                    ))}
+                    {slot.items.map((item, i) => {
+                      const { isNonVeg, text } = stripNonVegLabel(item);
+                      return (
+                        <View key={i} style={s.dietItem}>
+                          <View style={s.dietDot} />
+                          <Text style={s.dietItemText}>
+                            {isNonVeg ? <Text style={s.dietNonVegTag}>NON-VEG  </Text> : null}
+                            {text}
+                          </Text>
+                        </View>
+                      );
+                    })}
                     {slot.notes.length > 0 && (
                       <View style={s.dietSupportDivider}>
                         {slot.notes.map((note, i) => (
