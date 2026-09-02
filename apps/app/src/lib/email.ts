@@ -9,21 +9,31 @@ import { Resend } from "resend";
 const FROM = process.env.EMAIL_FROM || "Strengthiva <onboarding@resend.dev>";
 
 /**
- * Real email only goes out in production.
+ * Real email only goes out where it is explicitly switched on.
  *
- * Every other environment shares the same Resend account and the same verified
- * sending domain, so a local run or a staging test otherwise sends genuine mail
- * to whatever address is in the database — real people's addresses, from a
- * developer's laptop, counting against the production sending reputation.
+ * Every environment shares one Resend account and one verified sending domain,
+ * so anywhere without this gate sends genuine mail to whatever address is in the
+ * database — real people's addresses, from a laptop or a staging box, against
+ * the production sending reputation.
  *
- * Checked at call time rather than module load so the value can't be baked in
- * by a build that happened to run with a different NODE_ENV.
+ * WHY NOT NODE_ENV. Next statically replaces `process.env.NODE_ENV` in server
+ * bundles, so `process.env.NODE_ENV !== "production"` compiles to
+ * `"production" !== "production"` and the whole branch is dead-code eliminated —
+ * verified by reading the deployed chunk, where the check had vanished entirely.
+ * That silently fails open for any deployment BUILT in production mode but not
+ * actually production: staging is built exactly like production, so it would
+ * have sent real email with nothing in the code to suggest otherwise.
+ *
+ * EMAIL_ENABLED is an ordinary server-side variable, which Next does NOT inline,
+ * so it is genuinely read at runtime and each deployment decides for itself with
+ * no rebuild. Default is OFF: a new environment that forgets to set it sends
+ * nothing, which is the safe direction to fail.
  */
 function shouldSend(kind: string, to: string): boolean {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.EMAIL_ENABLED !== "true") {
     console.info(
-      `[email] skipped ${kind} to ${to} — NODE_ENV=${process.env.NODE_ENV ?? "undefined"}; ` +
-        "email is only sent in production",
+      `[email] skipped ${kind} to ${to} — EMAIL_ENABLED is not "true"; ` +
+        "email sending is off in this environment",
     );
     return false;
   }
@@ -79,13 +89,11 @@ export async function sendVerificationEmail(to: string, url: string) {
   // time ("Missing API key"), which would otherwise crash the whole
   // /api/auth/[...all] route — every auth action, not just this one.
   if (!shouldSend("verification email", to)) {
-    // Outside production the link is logged rather than sent. Without this a
-    // developer is locked out of their own account: requireEmailVerification is
-    // on, so sign-in fails until the link is followed, and skipping the send
-    // silently would leave no way to follow it.
-    if (process.env.NODE_ENV !== "production") {
-      console.info(`[email] verification link for ${to}: ${url}`);
-    }
+    // Where sending is off, the link is logged rather than silently dropped.
+    // Without this a developer is locked out of their own account:
+    // requireEmailVerification is on, so sign-in fails until the link is
+    // followed, and skipping the send would leave no way to follow it.
+    console.info(`[email] verification link for ${to}: ${url}`);
     return;
   }
 
