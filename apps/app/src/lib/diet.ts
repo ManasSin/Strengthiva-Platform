@@ -65,6 +65,22 @@ const OPTION_PREFIX = /^(?:option\s+)?[a-z0-9]{1,2}\s*[):.-]\s*/i;
 const NOTE_LABEL =
   /^\s*(?:\*\*|_|\*)?\s*(benefits?|purpose|focus|nutrition focus|properties|note|notes|why|tip|tips)\s*(?:\*\*|_|\*)?\s*[:—-]\s*/i;
 
+/**
+ * The non-vegetarian alternative bullet the backend adds for non-veg patients
+ * (strengthiva-backend NONVEG_AUGMENTATION_CLAUSE): a macro-matched meat/fish/egg
+ * swap shown beneath the vegetarian item, e.g.
+ *   "Non-veg option: Grilled chicken breast (100g) — ~165 kcal, ~31 g protein
+ *    (vs paneer bhurji: ~265 kcal, ~25 g protein)"
+ *
+ * This is FOOD, not supporting text — but it is recognised explicitly (rather than
+ * left to fall through as an ordinary item) for two reasons: so the UI can mark it
+ * as an alternative, and so it can never be misclassified as a note if NOTE_LABEL
+ * ever grows a colliding word. Tolerant of the wording drift the model shows
+ * ("Non veg alternative", "Nonvegetarian swap"); kept in lockstep with the
+ * backend's `_NONVEG_OPTION_LINE` regex — change both together.
+ */
+const NONVEG_LABEL = /^\s*non[-\s]?veg(?:etarian)?\s+(?:option|alternative|swap)\b\s*[:—-]?\s*/i;
+
 /** Headings that are day-wide advice rather than a meal. */
 const ADVICE_HEADING = /^(objective|goal|doctor'?s? tips?|main properties|day calories)$/i;
 
@@ -98,6 +114,22 @@ export function isYogaLine(text: string): boolean {
   return /\byoga\b|\bpranayam|asana\b|\baasan|surya\s*namaskar/i.test(text);
 }
 
+/** True for a non-vegetarian alternative food item (see NONVEG_LABEL). */
+export function isNonVegAlternative(text: string): boolean {
+  return NONVEG_LABEL.test(text);
+}
+
+/**
+ * Split a non-veg alternative item into a badge flag and its food text (label
+ * prefix removed), so the UI can tag it rather than repeat "Non-veg option:".
+ * A non-matching line is returned unchanged with `isNonVeg: false`.
+ */
+export function stripNonVegLabel(text: string): { isNonVeg: boolean; text: string } {
+  const m = text.match(NONVEG_LABEL);
+  if (!m) return { isNonVeg: false, text };
+  return { isNonVeg: true, text: text.slice(m[0].length).trim() };
+}
+
 export function parseDietPlan(markdown: string): ParsedDiet | null {
   if (!markdown?.trim()) return null;
 
@@ -117,9 +149,14 @@ export function parseDietPlan(markdown: string): ParsedDiet | null {
     const bullet = line.match(BULLET);
     if (bullet && current) {
       const body = bullet[1].trim();
+      // The non-veg alternative is FOOD: pin it as an item before the note check,
+      // so it renders in the meal (with its badge) and can never be swallowed as
+      // supporting text. Its "Non-veg option:" prefix isn't an OPTION_PREFIX, so it
+      // is kept intact for stripNonVegLabel to split at render time.
+      if (isNonVegAlternative(body)) current.items.push(body);
       // Checked BEFORE the option prefix is stripped: "Benefits: …" has no
       // option prefix, and stripping first can eat the first word of a note.
-      if (NOTE_LABEL.test(body)) current.notes.push(body);
+      else if (NOTE_LABEL.test(body)) current.notes.push(body);
       else current.items.push(body.replace(OPTION_PREFIX, "").trim());
       continue;
     }
