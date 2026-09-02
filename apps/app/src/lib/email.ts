@@ -1,8 +1,38 @@
 import { Resend } from "resend";
 
 // EMAIL_FROM must be on a domain verified in Resend's dashboard — an unverified
-// sender address makes every send fail, not just get flagged as spam.
+// sender address makes every send fail, not just get flagged as spam. Note that
+// verifying `noreply.strengthiva.com` does NOT authorise `@strengthiva.com`:
+// Resend matches the domain exactly, so the sender must be at the verified
+// domain itself (this was live for a while as noreply@strengthiva.com against a
+// verified noreply.strengthiva.com, which would have failed every send).
 const FROM = process.env.EMAIL_FROM || "Strengthiva <onboarding@resend.dev>";
+
+/**
+ * Real email only goes out in production.
+ *
+ * Every other environment shares the same Resend account and the same verified
+ * sending domain, so a local run or a staging test otherwise sends genuine mail
+ * to whatever address is in the database — real people's addresses, from a
+ * developer's laptop, counting against the production sending reputation.
+ *
+ * Checked at call time rather than module load so the value can't be baked in
+ * by a build that happened to run with a different NODE_ENV.
+ */
+function shouldSend(kind: string, to: string): boolean {
+  if (process.env.NODE_ENV !== "production") {
+    console.info(
+      `[email] skipped ${kind} to ${to} — NODE_ENV=${process.env.NODE_ENV ?? "undefined"}; ` +
+        "email is only sent in production",
+    );
+    return false;
+  }
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`[email] RESEND_API_KEY not set — skipping ${kind} to ${to}`);
+    return false;
+  }
+  return true;
+}
 
 /**
  * Sent once, right after a phone-OTP user gives us their email in assessment
@@ -14,10 +44,7 @@ const FROM = process.env.EMAIL_FROM || "Strengthiva <onboarding@resend.dev>";
  * so both can be restyled together.
  */
 export async function sendWelcomeEmail(to: string, name?: string) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY not set — skipping welcome email to", to);
-    return;
-  }
+  if (!shouldSend("welcome email", to)) return;
 
   const greeting = name && name !== "there" ? `Welcome, ${name}!` : "Welcome to Strengthiva!";
 
@@ -47,16 +74,18 @@ export async function sendWelcomeEmail(to: string, name?: string) {
 }
 
 export async function sendVerificationEmail(to: string, url: string) {
-  if (!process.env.RESEND_API_KEY) {
-    // Don't let a missing key break sign-up/sign-in entirely — verified
-    // directly that `new Resend(undefined)` throws synchronously at
-    // construction time ("Missing API key"), which would otherwise crash the
-    // whole /api/auth/[...all] route (every auth action, not just this one)
-    // if this were instantiated at module scope instead of lazily here.
-    console.warn(
-      "RESEND_API_KEY not set — skipping verification email to",
-      to
-    );
+  // Resend is still constructed lazily below, never at module scope: verified
+  // directly that `new Resend(undefined)` throws synchronously at construction
+  // time ("Missing API key"), which would otherwise crash the whole
+  // /api/auth/[...all] route — every auth action, not just this one.
+  if (!shouldSend("verification email", to)) {
+    // Outside production the link is logged rather than sent. Without this a
+    // developer is locked out of their own account: requireEmailVerification is
+    // on, so sign-in fails until the link is followed, and skipping the send
+    // silently would leave no way to follow it.
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[email] verification link for ${to}: ${url}`);
+    }
     return;
   }
 
