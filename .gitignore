@@ -15,3 +15,10 @@ build/
 # every diff. apps/app already ignored it locally; this covers the workspace so
 # apps/store (which has no .gitignore of its own) is caught too.
 *.tsbuildinfo
+
+# Local AI-agent working notes
+AGENTS.md
+PROJECT_CONTEXT.md
+AGENT_HANDOFF.md
+explorations/
+CLAUDE.md
