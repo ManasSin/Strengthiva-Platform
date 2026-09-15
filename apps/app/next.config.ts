@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   // it actually needs) — keeps the production Docker image small instead of shipping
   // the full pnpm workspace node_modules tree.
   output: "standalone",
+  transpilePackages: ["@strengthiva/transparency"],
 };
 
 export default nextConfig;

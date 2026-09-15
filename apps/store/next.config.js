@@ -15,6 +15,7 @@ const nextConfig = {
   // Self-contained .next/standalone build for a lean production Docker image —
   // see apps/app/next.config.ts for the same rationale.
   output: "standalone",
+  transpilePackages: ["@strengthiva/transparency"],
   reactStrictMode: true,
   logging: {
     fetches: {
