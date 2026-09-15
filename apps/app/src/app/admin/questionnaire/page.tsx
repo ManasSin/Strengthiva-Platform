@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { api, ApiError, type AdminStep, type StepCreatePayload } from "@/lib/api-client";
+import { Icon } from "@strengthiva/transparency/ui";
 
 // Admin questionnaire schema management — the DB-backed replacement for
 // strengthiva-platform's old hardcoded questionnaire-schema.ts (see that
@@ -69,28 +71,30 @@ export default function AdminQuestionnairePage() {
     }
   }
 
-  if (error) return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
-  if (!steps) return <div className="text-sm text-gray-500">Loading…</div>;
+  if (!steps) return <div className="px-4 py-10 text-sm text-muted-foreground">Loading questionnaire…</div>;
 
   const orderedSteps = [...steps].sort((a, b) => a.order_index - b.order_index);
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Questionnaire</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Steps in the health-assessment wizard. Disease-condition steps only appear when the matching
-            chronic-condition checkbox is selected.
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 py-2 sm:py-6">
+      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div className="max-w-3xl">
+          <h1 className="font-display text-title text-foreground">Questionnaire</h1>
+          <p className="mt-3 text-[0.98rem] leading-7 text-muted-foreground">
+            Arrange the health-assessment journey. Condition-specific steps appear only when the matching chronic condition is selected.
           </p>
         </div>
-        <button
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white"
-          onClick={() => setShowCreateForm((v) => !v)}
-        >
-          {showCreateForm ? "Cancel" : "+ New step"}
-        </button>
-      </div>
+        <Button size="sm" onClick={() => setShowCreateForm((value) => !value)}>
+          <Icon name={showCreateForm ? "x" : "plus"} className="size-4" />
+          {showCreateForm ? "Cancel" : "New step"}
+        </Button>
+      </header>
+
+      {error && (
+        <div role="alert" className="rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {showCreateForm && (
         <CreateStepForm
@@ -103,52 +107,72 @@ export default function AdminQuestionnairePage() {
         />
       )}
 
-      <div className="flex flex-col gap-y-2">
+      <section className="overflow-hidden rounded-2xl border border-border bg-background" aria-labelledby="questionnaire-steps-title">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-5 sm:px-7">
+          <div>
+            <h2 id="questionnaire-steps-title" className="font-display text-heading text-foreground">Assessment steps</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Use the arrows to set the order people see.</p>
+          </div>
+          <span className="text-sm text-muted-foreground">{orderedSteps.length} steps</span>
+        </div>
         {orderedSteps.map((step, i) => (
-          <div
+          <article
             key={step.id}
-            className={`flex items-center justify-between rounded-lg border bg-background p-4 ${!step.active ? "opacity-50" : ""}`}
+            className={`flex flex-col gap-4 border-b border-border px-5 py-5 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:px-7 ${
+              step.active ? "" : "bg-surface/70"
+            }`}
           >
             <div className="flex items-center gap-3">
-              <span className="text-xl">{step.icon}</span>
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sage-soft text-foreground">
+                <Icon name={step.step_type === "disease_block" ? "flask" : "file"} className="size-5" />
+              </span>
               <div>
-                <div className="font-medium">
-                  {step.title}{" "}
-                  <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-                    {step.step_type}
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold text-foreground">{step.title}</h3>
+                  <span className="rounded-full bg-surface px-2.5 py-1 text-xs text-muted-foreground">
+                    {step.step_type === "disease_block" ? "Condition step" : "Standard step"}
                   </span>
-                  {!step.active && <span className="ml-1 text-xs text-red-500">(hidden)</span>}
+                  {!step.active && <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive">Hidden</span>}
                 </div>
-                <div className="text-xs text-gray-400">
-                  key: {step.key} · {step.questions.filter((q) => q.active).length} active questions
-                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {step.questions.filter((question) => question.active).length} active questions · {step.key}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button disabled={busy || i === 0} className="text-sm disabled:opacity-30" onClick={() => move(step, -1)}>
-                ↑
-              </button>
-              <button
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon-xs"
+                disabled={busy || i === 0}
+                aria-label={`Move ${step.title} up`}
+                onClick={() => move(step, -1)}
+              >
+                <Icon name="arrow-right" className="size-3.5 -rotate-90" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-xs"
                 disabled={busy || i === orderedSteps.length - 1}
-                className="text-sm disabled:opacity-30"
+                aria-label={`Move ${step.title} down`}
                 onClick={() => move(step, 1)}
               >
-                ↓
-              </button>
-              <Link href={`/admin/questionnaire/${step.id}`} className="text-sm text-primary underline">
+                <Icon name="arrow-right" className="size-3.5 rotate-90" />
+              </Button>
+              <Link href={`/admin/questionnaire/${step.id}`} className="rounded-lg px-2 py-2 text-sm font-medium text-primary underline decoration-primary/50 underline-offset-4 transition-colors hover:text-foreground">
                 Edit
               </Link>
-              <button
+              <Button
+                variant="ghost"
+                size="xs"
                 disabled={busy}
-                className="text-sm text-gray-500 underline disabled:opacity-30"
                 onClick={() => toggleActive(step)}
               >
                 {step.active ? "Hide" : "Unhide"}
-              </button>
+              </Button>
             </div>
-          </div>
+          </article>
         ))}
-      </div>
+      </section>
     </div>
   );
 }

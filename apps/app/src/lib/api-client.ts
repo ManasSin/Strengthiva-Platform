@@ -408,6 +408,12 @@ export const api = {
       { method: "DELETE" }
     ),
 
+  deleteIndexedDocuments: (docType: "diet_chart" | "product_recommendation") =>
+    request<{ chunks_deleted: number; total_in_collection?: number }>(
+      `/api/v1/test/index/documents?doc_type=${docType}`,
+      { method: "DELETE" }
+    ),
+
   // ── Admin: Product CSV import (/admin/products) ──────────────────────────
   importProductsCsv: (file: File) => {
     const form = new FormData();

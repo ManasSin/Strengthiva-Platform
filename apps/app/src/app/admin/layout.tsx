@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { AdminFrame } from "@/components/admin/admin-frame";
+import "@strengthiva/transparency/styles.css";
 import { auth } from "@/lib/auth";
 
 // Real per-person admin gate — replaces the shared X-Admin-Key model as the
@@ -33,25 +34,5 @@ export default async function AdminLayout({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="border-b bg-background px-6 py-4 flex items-center gap-6">
-        <span className="font-semibold">Strengthiva Admin</span>
-        <Link href="/admin/knowledge-base" className="text-sm text-gray-600 hover:text-gray-900">
-          Knowledge Base
-        </Link>
-        <Link href="/admin/batch-certificates" className="text-sm text-gray-600 hover:text-gray-900">
-          Batch Certificates
-        </Link>
-        <Link href="/admin/questionnaire" className="text-sm text-gray-600 hover:text-gray-900">
-          Questionnaire
-        </Link>
-        <Link href="/admin/products" className="text-sm text-gray-600 hover:text-gray-900">
-          Products
-        </Link>
-        <span className="ml-auto text-sm text-gray-400">{session.user.email}</span>
-      </nav>
-      <main className="max-w-4xl mx-auto px-6 py-10">{children}</main>
-    </div>
-  );
+  return <AdminFrame email={session.user.email}>{children}</AdminFrame>;
 }

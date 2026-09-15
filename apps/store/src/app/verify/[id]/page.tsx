@@ -1,112 +1,98 @@
-import { Metadata } from "next"
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { Heading, Text, Badge } from "@modules/common/components/ui"
+import {
+  PublicChrome,
+  PublicRecord,
+} from "@strengthiva/transparency/public-record"
+import { Icon, Status } from "@strengthiva/transparency/ui"
+import type { PublicRecord as PublicData } from "@strengthiva/transparency/types"
+import "@strengthiva/transparency/styles.css"
 
-// Batch certificate verification — reached by scanning the QR code printed on a
-// medicine bottle. Deliberately outside [countryCode] (see middleware.ts) since
-// this URL is physically printed and must never depend on region redirects.
-//
-// Fetches strengthiva-backend (FastAPI) directly, not Medusa — the one deliberate
-// exception to this app's "talks exclusively to Medusa" rule. See
-// docs/platform-architecture/tech-specs/backend/batch-certificates.md and
-// 00-overview.md §2.4.
-
-type Props = {
-  params: Promise<{ id: string }>
-}
-
+// This URL is printed on packaging and intentionally lives outside [countryCode].
+export const dynamic = "force-dynamic"
 export const metadata: Metadata = {
-  title: "Batch Certificate Verification | Strengthiva",
-  description: "Verify a Strengthiva medicine batch's quality certificate.",
+  title: "Product transparency | Strengthiva",
+  description:
+    "Manufacturing details, ingredient traceability, and recorded quality evidence for a Strengthiva product and batch.",
+  robots: { index: false, follow: false },
 }
-
-type Certificate = {
-  id: string
-  original_filename: string
-  vetted_at: string
-  file_url: string
-}
-
-type BatchCertificateResponse = {
-  batch_number: string
-  product_name: string | null
-  certificates: Certificate[]
-}
-
-async function getBatchCertificate(
-  id: string
-): Promise<BatchCertificateResponse | null> {
-  const res = await fetch(`${process.env.FASTAPI_URL}/api/v1/certificates/${id}`, {
+const api = process.env.FASTAPI_URL || "http://localhost:8000"
+async function read(path: string) {
+  return fetch(`${api}/api/v1/${path}`, {
     cache: "no-store",
+    signal: AbortSignal.timeout(12000),
   })
-  if (!res.ok) return null
-  return res.json()
 }
-
-export default async function VerifyPage(props: Props) {
-  const params = await props.params
-  const data = await getBatchCertificate(params.id).catch(() => null)
-
-  if (!data) {
-    return notFound()
+type LegacyRecord = {
+  product_name: string | null
+  batch_number: string
+  certificates: { id: string; original_filename: string; file_url: string }[]
+}
+export default async function VerifyPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(id))
+    notFound()
+  const response = await read(`transparency/${id}`)
+  if (response.ok) {
+    const data: PublicData = await response.json()
+    return (
+      <PublicChrome>
+        <PublicRecord data={data} />
+      </PublicChrome>
+    )
   }
-
+  if (response.status !== 404)
+    throw new Error("The record service is temporarily unavailable.")
+  // Preserve QR codes printed before the product-level platform. A legacy batch
+  // cannot be mistaken for a new unpublished batch-product (distinct UUIDs).
+  const legacyResponse = await read(`certificates/${id}`)
+  if (legacyResponse.status === 404) notFound()
+  if (!legacyResponse.ok)
+    throw new Error("The record service is temporarily unavailable.")
+  const legacy: LegacyRecord = await legacyResponse.json()
   return (
-    <div className="py-12 min-h-screen bg-gray-50">
-      <div className="content-container max-w-2xl mx-auto flex flex-col gap-y-8">
-        <div className="flex flex-col gap-y-2 items-center text-center">
-          <Badge color="green">Verified</Badge>
-          <Heading level="h1">Certified Batch</Heading>
-          <Text className="text-gray-500">
-            This batch&apos;s quality certificate has been vetted by Strengthiva.
-          </Text>
-        </div>
-
-        <div className="bg-bg rounded-lg border p-6 flex flex-col gap-y-4">
-          <div>
-            <Text className="text-gray-500 text-sm">Batch number</Text>
-            <Text className="text-lg font-medium">{data.batch_number}</Text>
+    <PublicChrome>
+      <div className="public-main" id="product-record">
+        <section className="public-section">
+          <Status tone="good" icon="check">
+            Published batch certificate
+          </Status>
+          <h1 className="legacy-title">
+            {legacy.product_name || "Batch certificate"}
+          </h1>
+          <p className="mono">{legacy.batch_number}</p>
+          <p>
+            This previously issued QR code links to the batch’s published
+            certificates.
+          </p>
+        </section>
+        <section className="public-section">
+          <div className="public-section-head">
+            <h2>Published certificates</h2>
           </div>
-          {data.product_name && (
-            <div>
-              <Text className="text-gray-500 text-sm">Product</Text>
-              <Text className="text-lg font-medium">{data.product_name}</Text>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-y-4">
-          <Heading level="h2">
-            Certificate{data.certificates.length > 1 ? "s" : ""}
-          </Heading>
-          {data.certificates.map((cert) => (
-            <div
-              key={cert.id}
-              className="bg-bg rounded-lg border p-4 flex flex-col gap-y-3"
-            >
-              <div className="flex items-center justify-between gap-4">
-                <Text className="font-medium">{cert.original_filename}</Text>
-                <a
-                  href={cert.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary underline text-sm shrink-0"
-                >
-                  Download PDF
-                </a>
-              </div>
-              <Text className="text-xs text-gray-500">
-                Vetted on {new Date(cert.vetted_at).toLocaleDateString()}
-              </Text>
-              <iframe
-                src={cert.file_url}
-                className="w-full h-[500px] border rounded"
-                title={cert.original_filename}
-              />
-            </div>
-          ))}
-        </div>
+          <div className="public-docs">
+            {legacy.certificates.map((cert) => (
+              <a
+                className="public-doc"
+                key={cert.id}
+                href={cert.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Icon name="file" />
+                <div>
+                  <strong>{cert.original_filename}</strong>
+                  <span>View / download PDF</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
       </div>
-    </div>
+    </PublicChrome>
   )
 }

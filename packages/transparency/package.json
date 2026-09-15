@@ -1,0 +1,26 @@
+{
+  "name": "@strengthiva/transparency",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./types": "./src/types.ts",
+    "./domain": "./src/domain.ts",
+    "./ui": "./src/ui.tsx",
+    "./public-record": "./src/public-record.tsx",
+    "./theme": "./src/theme.tsx",
+    "./styles.css": "./src/styles.css"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/*"
+      ]
+    }
+  }
+}
