@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { PHONE_TEMP_EMAIL_DOMAIN } from "@/lib/placeholder-email";
+import { useOtpBypass } from "@/lib/use-otp-bypass";
 
 // Mobile + OTP is how customers sign up: verifying the number IS the sign-up
 // (auth.ts's signUpOnVerification), and the real email is collected here on the
@@ -14,8 +16,14 @@ import { Button } from "@/components/ui/button";
 // profile_builder.build_patient_profile — adding them to the schema would leak a
 // contact number into every AI call.
 
-const TEMP_EMAIL_DOMAIN = "@phone.strengthiva.com";
+//
+// Guest mode (OTP_BYPASS, see lib/auth-mode.ts): while SMS isn't live, the same slot
+// collects mobile + email as unverified contact details and starts an anonymous
+// session instead — no code step.
+
+const TEMP_EMAIL_DOMAIN = PHONE_TEMP_EMAIL_DOMAIN;
 const RESEND_COOLDOWN_SECONDS = 30;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Better Auth's phone-number error codes → something a person can act on.
 const ERROR_TEXT: Record<string, string> = {
@@ -78,14 +86,58 @@ export function PhoneVerification({
   // a real one and must not be asked again.
   const needsEmail = signedIn && !!session?.user.email.endsWith(TEMP_EMAIL_DOMAIN) && !emailSaved;
 
+  // Guest mode: null until the server says which flow is live, so neither form
+  // flashes before the other.
+  const otpBypass = useOtpBypass();
+  const [contactSaved, setContactSaved] = useState(false);
+  const guestUser = session?.user as
+    | { isAnonymous?: boolean | null; contactPhone?: string | null }
+    | undefined;
+  const isGuest = !!guestUser?.isAnonymous;
+  const guestPhone = guestUser?.contactPhone ?? null;
+  // A guest session whose contact save failed (or was abandoned) still owes us the
+  // details before the form opens.
+  const needsContact = signedIn && isGuest && !guestPhone && !contactSaved;
+
   useEffect(() => {
     // The step can't be completed until the user is signed in and, if this is a
     // fresh OTP sign-up, has given us an email. Gating on `signedIn` rather than
     // on a verified phone deliberately: an already-authenticated user has nothing
     // left to prove, and making an admin verify a mobile to open the assessment
     // would be a regression.
-    onVerifiedChange(signedIn && !needsEmail);
-  }, [signedIn, needsEmail, onVerifiedChange]);
+    onVerifiedChange(signedIn && !needsEmail && !needsContact);
+  }, [signedIn, needsEmail, needsContact, onVerifiedChange]);
+
+  async function handleGuestContinue() {
+    setBusy(true);
+    setError(null);
+    try {
+      // Reuse an existing guest session (e.g. the contact save failed last time) —
+      // the plugin refuses a second anonymous sign-in from an anonymous session.
+      if (!signedIn) {
+        const { error: signInError } = await authClient.signIn.anonymous();
+        if (signInError) {
+          setError(signInError.message || "Couldn't start your assessment. Please try again.");
+          return;
+        }
+      }
+      const response = await fetch("/api/profile/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile, email, name }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.error || "Couldn't save your details. Please try again.");
+        return;
+      }
+      setContactSaved(true);
+    } catch {
+      setError("Couldn't reach the server. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -156,8 +208,75 @@ export function PhoneVerification({
     }
   }
 
-  if (sessionPending) {
+  if (sessionPending || otpBypass === null) {
     return <div className="mb-8 h-20 animate-pulse rounded-lg bg-border/40" />;
+  }
+
+  if (otpBypass && (!signedIn || needsContact)) {
+    const mobileValid = mobile.replace(/\D/g, "").length >= 10;
+    const emailValid = EMAIL_RE.test(email.trim());
+    return (
+      <div className="mb-8">
+        <label htmlFor="mobile" className="mb-2 block text-base font-medium text-foreground">
+          Mobile Number
+          <span className="ml-1 text-destructive" aria-hidden>*</span>
+        </label>
+        <p className="mb-2.5 text-sm text-muted-foreground">
+          So our team can reach you about your plan.
+        </p>
+        <div className="flex gap-2">
+          <span className="inline-flex items-center rounded-lg border border-border bg-surface px-3 text-base text-muted-foreground">
+            +91
+          </span>
+          <input
+            id="mobile"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            value={mobile}
+            placeholder="10-digit mobile number"
+            onChange={(e) => setMobile(e.target.value)}
+            className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <label htmlFor="email" className="mb-2 mt-6 block text-base font-medium text-foreground">
+          Email Address
+          <span className="ml-1 text-destructive" aria-hidden>*</span>
+        </label>
+        <p className="mb-2.5 text-sm text-muted-foreground">
+          Where we&apos;ll send your report. We&apos;ll say hello too.
+        </p>
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          placeholder="you@example.com"
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded-lg border border-border px-4 py-2.5 text-base focus:border-primary focus:outline-none"
+        />
+
+        <Button
+          type="button"
+          variant="default"
+          className="mt-5 px-6"
+          disabled={busy || !mobileValid || !emailValid}
+          onClick={handleGuestContinue}
+        >
+          {busy ? "Starting…" : "Continue to assessment"}
+        </Button>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </div>
+    );
+  }
+
+  if (isGuest) {
+    return (
+      <div className="mb-8 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+        <span aria-hidden>✓</span> We&apos;ll reach you on +91 {formatMobile(guestPhone ?? mobile)}
+      </div>
+    );
   }
 
   return (

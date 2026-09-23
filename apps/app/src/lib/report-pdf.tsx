@@ -2,11 +2,10 @@ import {
   Document,
   Font,
   Page,
-  Path,
   StyleSheet,
-  Svg,
   Text,
   View,
+  Image,
 } from "@react-pdf/renderer";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
@@ -43,6 +42,10 @@ import { parseDoshaHero } from "@/lib/dosha";
 // the browser, silently.
 const FONT_BASE =
   typeof window === "undefined" ? `${process.cwd()}/public/fonts` : "/fonts";
+// Same browser/server split as the fonts. The lockup is green on transparent, so it
+// sits on a white tag inside the forest header band rather than directly on it.
+const LOGO_SRC =
+  typeof window === "undefined" ? `${process.cwd()}/public/logo-green.png` : "/logo-green.png";
 
 Font.register({
   family: "Newsreader",
@@ -128,8 +131,8 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: PAGE_X,
   },
-  wordmark: { flexDirection: "row", alignItems: "center", gap: 7 },
-  wordmarkText: { fontFamily: "Newsreader", fontSize: 15, color: "#FFFFFF" },
+  logoTag: { backgroundColor: "#FFFFFF", borderRadius: 6, paddingVertical: 3, paddingHorizontal: 7 },
+  logo: { height: 38, width: 47 },
   headerMeta: {
     fontFamily: "DMMono",
     fontSize: 6.6,
@@ -374,27 +377,6 @@ const s = StyleSheet.create({
   italic: { fontStyle: "italic" },
 });
 
-/** The sprout mark, redrawn as PDF vector so it stays sharp at any zoom. */
-function BrandMark({ size = 15, color = "#FFFFFF" }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M12 20v-8" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
-      <Path
-        d="M12 12c0-3-2-5-6-5 0 4 2 5 6 5Z"
-        stroke={color}
-        strokeWidth={1.7}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M12 13c0-3 2-4 5-4 0 3-2 4-5 4Z"
-        stroke={color}
-        strokeWidth={1.7}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 /* ── Markdown ──────────────────────────────────────────────────────────── */
 
 function renderInline(nodes: PhrasingContent[], keyPrefix: string): React.ReactNode[] {
@@ -489,9 +471,9 @@ function PageFurniture() {
   return (
     <>
       <View style={s.header} fixed>
-        <View style={s.wordmark}>
-          <BrandMark />
-          <Text style={s.wordmarkText}>Strengthiva</Text>
+        <View style={s.logoTag}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt */}
+          <Image src={LOGO_SRC} style={s.logo} />
         </View>
         <Text style={s.headerMeta}>AYURVEDIC READING</Text>
       </View>

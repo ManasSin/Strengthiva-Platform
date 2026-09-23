@@ -319,18 +319,10 @@
   letter-spacing: -0.025em;
   white-space: nowrap;
 }
-.transparency .brand-mark {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--forest);
-  color: var(--paper);
-}
-.transparency .brand-mark .icon {
-  width: 16px;
-  height: 16px;
+.transparency .brand-logo {
+  display: block;
+  height: 48px;
+  width: auto;
 }
 .transparency .header-context {
   height: 30px;

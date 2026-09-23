@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
-import { BrandMark } from "@/components/ui/botanical";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { UserMenu } from "@/components/layout/user-menu";
 import { StoreLink } from "@/components/layout/store-link";
 import { cn } from "@/lib/utils";
@@ -78,13 +78,13 @@ export function MarketingNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-hairline-soft bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-[4.375rem] max-w-measure items-center gap-7 px-5 sm:px-7">
+      <div className="mx-auto flex h-[5.25rem] max-w-measure items-center gap-7 px-5 sm:px-7">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2.5 font-display text-[1.375rem] font-medium tracking-[-0.01em] text-foreground transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          aria-label="Strengthiva home"
+          className="flex shrink-0 items-center transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
-          <BrandMark className="size-[1.625rem] text-primary" />
-          Strengthiva
+          <BrandLogo className="h-[4.25rem] w-auto" priority />
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">

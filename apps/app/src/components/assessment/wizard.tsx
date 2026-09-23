@@ -9,6 +9,7 @@ import { api, ApiError } from "@/lib/api-client";
 import { FieldRenderer } from "./field-renderer";
 import { BmiField } from "./bmi-field";
 import { PhoneVerification } from "./phone-verification";
+import { useOtpBypass } from "@/lib/use-otp-bypass";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,7 @@ export function AssessmentWizard({
   const [allSteps, setAllSteps] = useState<StepDef[] | null>(null);
   const [schemaError, setSchemaError] = useState<string | null>(null);
   const [identityVerified, setIdentityVerified] = useState(false);
+  const otpBypass = useOtpBypass();
   // Set only once the user has tried to submit — required-but-empty questions stay
   // unmarked until then, so a form the user has not yet worked through doesn't open
   // covered in red.
@@ -279,11 +281,23 @@ export function AssessmentWizard({
     return (
       <div className="mx-auto max-w-[36rem]">
         {banner}
-        <h1 className="mb-2 text-[clamp(1.5rem,3.4vw,1.875rem)]">Verify your mobile number</h1>
-        <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">
-          We&rsquo;ll send you a one-time code. Your assessment and report are saved to this
-          number, so you can come back to them any time.
-        </p>
+        {otpBypass === false ? (
+          <>
+            <h1 className="mb-2 text-[clamp(1.5rem,3.4vw,1.875rem)]">Verify your mobile number</h1>
+            <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">
+              We&rsquo;ll send you a one-time code. Your assessment and report are saved to this
+              number, so you can come back to them any time.
+            </p>
+          </>
+        ) : otpBypass ? (
+          <>
+            <h1 className="mb-2 text-[clamp(1.5rem,3.4vw,1.875rem)]">Before we begin</h1>
+            <p className="mb-6 text-[0.9375rem] leading-relaxed text-muted-foreground">
+              Tell us how to reach you. Your report is saved to this browser, so keep the report
+              link once it&rsquo;s ready.
+            </p>
+          </>
+        ) : null}
         <div className="rounded-lg border border-border bg-background p-7 shadow-hairline">
           <PhoneVerification onVerifiedChange={handleVerifiedChange} />
         </div>
@@ -353,7 +367,7 @@ export function AssessmentWizard({
             </p>
           )}
 
-          <div className="sticky top-[4.375rem] z-10 -mx-5 mb-6 border-b border-hairline-soft bg-surface/95 px-5 py-3 backdrop-blur sm:-mx-7 sm:px-7 lg:mx-0 lg:rounded-lg lg:border lg:border-border lg:bg-background/95 lg:px-5">
+          <div className="sticky top-[5.25rem] z-10 -mx-5 mb-6 border-b border-hairline-soft bg-surface/95 px-5 py-3 backdrop-blur sm:-mx-7 sm:px-7 lg:mx-0 lg:rounded-lg lg:border lg:border-border lg:bg-background/95 lg:px-5">
             <div className="flex items-center gap-3.5">
               <div
                 className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-2"

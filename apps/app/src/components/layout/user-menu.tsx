@@ -7,8 +7,8 @@ import { FileText, LogOut, ShoppingBag, UserRound } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useLogout } from "@/lib/use-logout";
 import { cn } from "@/lib/utils";
+import { isPlaceholderEmail } from "@/lib/placeholder-email";
 
-const TEMP_EMAIL_DOMAIN = "@phone.strengthiva.com";
 const PLACEHOLDER_NAME = "there"; // auth.ts's getTempName for OTP sign-ups
 // Long enough to cross the gap between the avatar and the panel without the panel
 // closing, short enough not to linger after the pointer has genuinely left.
@@ -22,7 +22,7 @@ function accountInitials(user: SessionUser): string | null {
     const [first, second] = name.split(/\s+/);
     return (first[0] + (second?.[0] ?? "")).toUpperCase();
   }
-  if (user.email && !user.email.endsWith(TEMP_EMAIL_DOMAIN)) {
+  if (!isPlaceholderEmail(user.email)) {
     return user.email[0].toUpperCase();
   }
   return null;
@@ -30,7 +30,7 @@ function accountInitials(user: SessionUser): string | null {
 
 /** A readable secondary line for the menu header: real email, or the phone. */
 function contactLine(user: SessionUser): string | null {
-  if (user.email && !user.email.endsWith(TEMP_EMAIL_DOMAIN)) return user.email;
+  if (!isPlaceholderEmail(user.email)) return user.email;
   const phone = user.phoneNumber;
   if (phone) {
     const d = phone.replace(/\D/g, "").slice(-10);

@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { listCategories } from "@lib/data/categories";
 import { listCollections } from "@lib/data/collections";
 import { getAppURL } from "@lib/util/env";
@@ -19,9 +20,16 @@ export default async function Footer() {
           <div>
             <LocalizedClientLink
               href="/"
-              className="font-display text-[1.375rem] font-medium tracking-[-0.01em] text-forest transition-opacity hover:opacity-80"
+              className="inline-flex transition-opacity hover:opacity-80"
+              aria-label="Strengthiva home"
             >
-              Strengthiva
+              <Image
+                src="/logo-green.png"
+                alt="Strengthiva"
+                width={400}
+                height={321}
+                className="h-20 w-auto"
+              />
             </LocalizedClientLink>
           </div>
           <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
