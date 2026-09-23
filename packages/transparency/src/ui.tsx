@@ -139,10 +139,10 @@ export function Loading({ label = "Loading records" }: { label?: string }) {
 export function Brand({ href = "/" }: { href?: string }) {
   return (
     <a className="brand" href={href} aria-label="Strengthiva home">
-      <span className="brand-mark">
-        <Icon name="layers" />
-      </span>
-      <span>Strengthiva</span>
+      {/* Served from each app's public/ (apps/app and apps/store both ship it). A plain
+          <img> because this package is framework-agnostic. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="brand-logo" src="/logo-green.png" alt="Strengthiva" width={400} height={321} />
     </a>
   );
 }

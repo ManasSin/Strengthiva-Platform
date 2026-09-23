@@ -1,5 +1,5 @@
 import { StoreLink } from "@/components/layout/store-link";
-import { BrandMark } from "@/components/ui/botanical";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 // Restyled for the 2026-08 rebrand against docs/redesign/new design style 1.html
 // (`.footer`): mono column headings, a brand block that carries the sprout mark,
@@ -12,10 +12,7 @@ export function MarketingFooter() {
       <div className="mx-auto max-w-measure px-5 pb-10 pt-14 sm:px-7">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
-            <div className="flex items-center gap-2.5 font-display text-[1.375rem] font-medium tracking-[-0.01em] text-foreground">
-              <BrandMark className="size-[1.625rem] text-primary" />
-              Strengthiva
-            </div>
+            <BrandLogo className="h-20 w-auto" />
             <p className="mt-3 max-w-[30ch] text-[0.84375rem] leading-relaxed text-muted-foreground">
               Your own health information, turned into a plan you can actually use. © 2026
               Strengthiva. Modern Ayurvedic wisdom.

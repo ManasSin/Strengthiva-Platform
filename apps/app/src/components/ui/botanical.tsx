@@ -41,23 +41,3 @@ export function Botanical({
     </svg>
   );
 }
-
-/** The sprout mark that sits beside the wordmark in the nav and footer. */
-export function BrandMark({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("shrink-0", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 20v-8" />
-      <path d="M12 12c0-3-2-5-6-5 0 4 2 5 6 5Z" />
-      <path d="M12 13c0-3 2-4 5-4 0 3-2 4-5 4Z" />
-    </svg>
-  );
-}

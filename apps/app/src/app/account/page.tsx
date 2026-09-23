@@ -4,8 +4,8 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { AccountCard, FieldRow, Notice } from "@/components/account/account-ui";
+import { isPlaceholderEmail } from "@/lib/placeholder-email";
 
-const TEMP_EMAIL_DOMAIN = "@phone.strengthiva.com";
 
 function formatMobile(value: string): string {
   const digits = value.replace(/\D/g, "").slice(-10);
@@ -36,7 +36,7 @@ export default function ProfilePage() {
     "phoneNumber" in user && typeof user.phoneNumber === "string" ? user.phoneNumber : null;
   // Set at OTP sign-up before the real address is known (auth.ts's phoneTempEmail).
   // Showing it as if it were the user's email would be misleading.
-  const hasRealEmail = !user.email.endsWith(TEMP_EMAIL_DOMAIN);
+  const hasRealEmail = !isPlaceholderEmail(user.email);
 
   function reset() {
     setEditing(null);

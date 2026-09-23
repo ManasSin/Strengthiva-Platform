@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { Suspense } from "react"
 
 import { listLocales } from "@lib/data/locales"
@@ -16,26 +17,6 @@ import SideMenu from "@modules/layout/components/side-menu"
 //
 // Structure and data plumbing are untouched: SideMenu still owns regions/locales
 // and CartButton still streams in under Suspense.
-
-/** The sprout mark, mirroring apps/app/src/components/ui/botanical.tsx. */
-function BrandMark({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 20v-8" />
-      <path d="M12 12c0-3-2-5-6-5 0 4 2 5 6 5Z" />
-      <path d="M12 13c0-3 2-4 5-4 0 3-2 4-5 4Z" />
-    </svg>
-  )
-}
 
 // One treatment for every clickable item in the bar: a sage underline drawn on a
 // transparent baseline, so nothing shifts by a pixel between rest and hover.
@@ -63,11 +44,18 @@ export default async function Nav() {
 
           <LocalizedClientLink
             href="/"
-            className="flex shrink-0 items-center gap-2.5 font-display text-[1.375rem] font-medium tracking-[-0.01em] text-forest transition-opacity hover:opacity-80"
+            className="flex shrink-0 items-center transition-opacity hover:opacity-80"
             data-testid="nav-store-link"
+            aria-label="Strengthiva home"
           >
-            <BrandMark className="size-[1.625rem] shrink-0 text-primary" />
-            Strengthiva
+            <Image
+              src="/logo-green.png"
+              alt="Strengthiva"
+              width={400}
+              height={321}
+              priority
+              className="h-14 w-auto"
+            />
           </LocalizedClientLink>
 
           <div className="hidden small:flex items-center gap-6">

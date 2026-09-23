@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { usePathname } from "next/navigation";
 import { Icon } from "@strengthiva/transparency/ui";
 import { isTransparencyRoute, TransparencyShell } from "../transparency/shell";
@@ -40,12 +41,7 @@ export function AdminFrame({
             aria-label="Strengthiva admin home"
             className="inline-flex min-h-10 items-center gap-2 rounded-lg text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-foreground text-accent">
-              <Icon name="layers" className="size-4" />
-            </span>
-            <span className="font-display text-[1.15rem] tracking-[-0.02em]">
-              Strengthiva
-            </span>
+            <BrandLogo className="h-11" />
             <span className="border-l border-border pl-2 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Admin
             </span>

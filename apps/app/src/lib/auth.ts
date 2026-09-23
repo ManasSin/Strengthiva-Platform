@@ -1,8 +1,11 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins/admin";
+import { anonymous } from "better-auth/plugins/anonymous";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 import { Pool } from "pg";
+import { isOtpBypassEnabled } from "./auth-mode";
 import { sendVerificationEmail } from "./email";
+import { GUEST_EMAIL_DOMAIN } from "./placeholder-email";
 import { getFallbackOtp, normalizeIndianMobile, sendOtpSms } from "./sms";
 
 // Temp email assigned when a user is created by phone-OTP sign-up, before they
@@ -62,6 +65,14 @@ export const auth = betterAuth({
   // owns only the auth tables and would otherwise leave health records behind.
   user: {
     deleteUser: { enabled: true },
+    // Unverified contact details a guest gives before starting the assessment (see
+    // auth-mode.ts). Not unique, unlike email/phoneNumber: the same person retaking
+    // the assessment on another device gets a second guest account with the same
+    // contact, and that must not fail. Written only by /api/profile/contact.
+    additionalFields: {
+      contactPhone: { type: "string", required: false, input: false },
+      contactEmail: { type: "string", required: false, input: false },
+    },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
@@ -134,5 +145,19 @@ export const auth = betterAuth({
 
       requireVerification: true,
     }),
+    // Guest sessions exist only while OTP_BYPASS is on. Mounted conditionally so that
+    // once SMS is live, /sign-in/anonymous doesn't exist at all and phone OTP is the
+    // only way in.
+    ...(isOtpBypassEnabled()
+      ? [
+          anonymous({
+            emailDomainName: GUEST_EMAIL_DOMAIN,
+            // Same placeholder as phone sign-up, so /api/profile/contact can adopt the
+            // real name from the assessment under the same "only replace the
+            // placeholder" rule.
+            generateName: () => "there",
+          }),
+        ]
+      : []),
   ],
 });
