@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { setAuthToken, setCartId } from "@lib/data/cookies"
 import { getBaseURL } from "@lib/util/env"
+import { safeRedirect } from "@lib/util/safe-redirect"
 
 // Cart Bridge handoff — the counterpart to strengthiva-backend's
 // POST /api/v1/cart/add (docs/platform-architecture/tech-specs/backend/
@@ -8,7 +9,7 @@ import { getBaseURL } from "@lib/util/env"
 // single-use handoff code (never the Medusa customer JWT itself, which defaults
 // to a 1-day expiry — too long-lived to put in a URL). We exchange it server-side
 // here and set the same cookies Medusa's own login flow sets
-// (@lib/data/cookies.ts's setAuthToken/setCartId), so the browser lands on /cart
+// (@lib/data/cookies.ts's setAuthToken/setCartId), so the browser lands on the store
 // already authenticated as that customer, viewing the exact cart app. built —
 // not whatever cart the empty session/cookie would otherwise resolve to.
 //
@@ -16,11 +17,19 @@ import { getBaseURL } from "@lib/util/env"
 // matcher excludes /api/* from its country-code redirect; confirmed by testing
 // directly, the bare-path version got redirected to /dk/cart-handoff (which has no
 // route) before ever reaching this handler.
+//
+// ?redirect= picks the landing page (the report's "Add to plan" sends the product's
+// own page, /products/<handle>); defaults to the cart. Every redirect is built on
+// the public origin (NEXT_PUBLIC_BASE_URL), never request.url: behind Caddy the
+// standalone server sees request.url as its bind address, and this route was sending
+// users to https://0.0.0.0:3001/cart (fixed 2026-09-23; auth-handoff had the same
+// fix earlier).
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")
+  const destination = safeRedirect(request.nextUrl.searchParams.get("redirect"), "/cart")
 
   if (!code) {
-    return NextResponse.redirect(new URL("/cart", getBaseURL()))
+    return NextResponse.redirect(new URL(destination, getBaseURL()))
   }
 
   try {
@@ -41,5 +50,5 @@ export async function GET(request: NextRequest) {
     // FastAPI unreachable — same graceful degradation as an expired code.
   }
 
-  return NextResponse.redirect(new URL("/cart", request.url))
+  return NextResponse.redirect(new URL(destination, getBaseURL()))
 }

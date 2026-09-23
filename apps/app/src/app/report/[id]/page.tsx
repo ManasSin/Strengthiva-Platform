@@ -23,6 +23,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { Eyebrow } from "@/components/ui/label";
 import { parseDoshaHero } from "@/lib/dosha";
 import { isYogaLine, parseDietPlan, stripNonVegLabel, stripNoteLabel } from "@/lib/diet";
+import { STORE_URL } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { api, ApiError, type ReportResponse, type ResolvedProduct } from "@/lib/api-client";
 
@@ -589,21 +590,34 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
   const [adding, setAdding] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
 
-  async function handleAddToCart(variantId: string) {
+  async function handleAddToCart(variantId: string, productPath: string) {
     setAdding(true);
     setCartError(null);
+    // Open the tab synchronously, inside the click. Opening it after the await (as
+    // this used to) is a popup the browser blocks — on Safari/iOS the button did
+    // nothing at all. Same pattern as StoreLink.
+    const tab = window.open("about:blank", "_blank");
+    const productUrl = `${STORE_URL}${productPath}`;
     try {
       const { store_cart_url } = await api.addToCart(variantId);
-      window.open(store_cart_url, "_blank");
+      // The handoff signs the user in on the store, attaches the cart, then lands
+      // them on this product's page (the header cart count shows it was added).
+      const url = new URL(store_cart_url);
+      url.searchParams.set("redirect", productPath);
+      if (tab) tab.location.href = url.toString();
+      else window.location.href = url.toString();
     } catch (err) {
       // Cart Bridge failure — surface it and leave the button re-enabled so the
       // user can retry, per app/routers/cart.py's 502 on MedusaClientError.
       // Swallowing this silently made a broken Cart Bridge look like a dead
       // button, which is exactly how it was reported by the client.
       if (err instanceof ApiError && err.status === 401) {
+        tab?.close();
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
         return;
       }
+      // The product page still works without the cart — send the tab there.
+      if (tab) tab.location.href = productUrl;
       setCartError(
         err instanceof ApiError ? err.message : "Couldn't add this to your cart. Please try again.",
       );
@@ -613,6 +627,10 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
   }
 
   const resolved = product.resolution.status === "resolved" ? product.resolution : null;
+  // Bare path — the store's middleware adds the country prefix (/in/…).
+  const productPath = resolved?.medusa_product_handle
+    ? `/products/${resolved.medusa_product_handle}`
+    : "/store";
 
   return (
     // `flex flex-col` with the footer pushed by `mt-auto`: the price/CTA row now
@@ -662,7 +680,7 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
                 variant="secondary"
                 size="sm"
                 disabled={adding}
-                onClick={() => handleAddToCart(resolved.medusa_variant_id)}
+                onClick={() => handleAddToCart(resolved.medusa_variant_id, productPath)}
               >
                 {adding ? "Adding…" : "Add to plan"}
               </Button>

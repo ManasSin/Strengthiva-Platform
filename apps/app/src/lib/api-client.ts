@@ -55,7 +55,7 @@ export type HealthAssessmentResponse = {
 export type ResolvedItem = {
   name: string;
   resolution:
-    | { status: "resolved"; medusa_product_id: string; medusa_variant_id: string; sku: string; price: number | null; currency_code: string | null }
+    | { status: "resolved"; medusa_product_id: string; medusa_product_handle?: string | null; medusa_variant_id: string; sku: string; price: number | null; currency_code: string | null }
     | { status: "out_of_stock" }
     | { status: "unmapped" };
 };
@@ -98,7 +98,7 @@ export type ResolvedProduct = {
   complement?: string;
   status?: string;
   resolution:
-    | { status: "resolved"; medusa_product_id: string; medusa_variant_id: string; sku: string; price: number | null; currency_code: string | null }
+    | { status: "resolved"; medusa_product_id: string; medusa_product_handle?: string | null; medusa_variant_id: string; sku: string; price: number | null; currency_code: string | null }
     | { status: "out_of_stock" }
     | { status: "unmapped" };
 };
