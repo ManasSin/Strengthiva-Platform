@@ -16,7 +16,6 @@ import {
 
 import { FlowShell } from "@/components/assessment/flow-shell";
 import { MarketingFooter } from "@/components/layout/footer";
-import { StoreLink } from "@/components/layout/store-link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/ui/markdown";
@@ -395,13 +394,14 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 live, so availability is current
               </span>
             </div>
-            {/* Checkout lives on the store, not here — StoreLink carries a
-                signed-in user's session across the origin boundary so they
-                don't land on the cart signed out. */}
-            <StoreLink path="/in/cart" className={buttonVariants({ variant: "onforest" })}>
-              Review &amp; checkout
-              <ArrowRight strokeWidth={1.7} />
-            </StoreLink>
+            {/* Checkout lives on the store: this puts every in-stock product from
+                the plan into the user's store cart and opens it there, signed in.
+                It used to be a bare link to the cart, which added nothing. */}
+            <CheckoutPlanButton
+              variantIds={purchasable.flatMap((p) =>
+                p.resolution.status === "resolved" ? [p.resolution.medusa_variant_id] : [],
+              )}
+            />
           </div>
         )}
 
@@ -584,6 +584,80 @@ function DoshaGlyph({ component }: { component: string }) {
   return <Glyph className="size-3.5" strokeWidth={1.7} aria-hidden />;
 }
 
+/* ── Store cart handoff ───────────────────────────────────────────────────── */
+
+/**
+ * Adds variants to the user's store cart (Cart Bridge, POST /api/v1/cart/add) and
+ * lands a new tab on `path` of store.strengthiva.com, signed in with that cart.
+ * Returns an error message to show, or null.
+ *
+ * Must be called straight from a click handler: the tab is opened before the first
+ * await, because a window.open after it is a popup the browser blocks (on Safari/iOS
+ * the buttons did nothing at all). On failure the tab goes to `fallbackPath`, or is
+ * closed when there's nowhere useful to send it.
+ */
+async function sendToStoreCart(
+  variantIds: string[],
+  path: string,
+  fallbackPath: string | null,
+): Promise<string | null> {
+  const tab = window.open("about:blank", "_blank");
+  try {
+    const { store_cart_url } = await api.addToCart(
+      variantIds.map((id) => ({ medusa_variant_id: id })),
+    );
+    const url = new URL(store_cart_url);
+    url.searchParams.set("redirect", path);
+    if (tab) tab.location.href = url.toString();
+    else window.location.href = url.toString();
+    return null;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      tab?.close();
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      return null;
+    }
+    if (tab && fallbackPath) tab.location.href = `${STORE_URL}${fallbackPath}`;
+    else tab?.close();
+    // Cart Bridge failure (app/routers/cart.py's 502 on MedusaClientError) — shown
+    // so a broken bridge doesn't look like a dead button, which is how it was first
+    // reported by the client.
+    return err instanceof ApiError ? err.message : "Couldn't add this to your cart. Please try again.";
+  }
+}
+
+function CheckoutPlanButton({ variantIds }: { variantIds: string[] }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout() {
+    setPending(true);
+    setError(null);
+    setError(await sendToStoreCart(variantIds, "/cart", null));
+    setPending(false);
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <button
+        type="button"
+        onClick={handleCheckout}
+        disabled={pending}
+        aria-busy={pending || undefined}
+        className={buttonVariants({ variant: "onforest" })}
+      >
+        {pending ? "Adding to cart…" : "Review & checkout"}
+        <ArrowRight strokeWidth={1.7} />
+      </button>
+      {error && (
+        <p role="alert" className="text-xs text-surface/80">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Product card ─────────────────────────────────────────────────────────── */
 
 function ProductCard({ product }: { product: ResolvedProduct }) {
@@ -593,37 +667,9 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
   async function handleAddToCart(variantId: string, productPath: string) {
     setAdding(true);
     setCartError(null);
-    // Open the tab synchronously, inside the click. Opening it after the await (as
-    // this used to) is a popup the browser blocks — on Safari/iOS the button did
-    // nothing at all. Same pattern as StoreLink.
-    const tab = window.open("about:blank", "_blank");
-    const productUrl = `${STORE_URL}${productPath}`;
-    try {
-      const { store_cart_url } = await api.addToCart(variantId);
-      // The handoff signs the user in on the store, attaches the cart, then lands
-      // them on this product's page (the header cart count shows it was added).
-      const url = new URL(store_cart_url);
-      url.searchParams.set("redirect", productPath);
-      if (tab) tab.location.href = url.toString();
-      else window.location.href = url.toString();
-    } catch (err) {
-      // Cart Bridge failure — surface it and leave the button re-enabled so the
-      // user can retry, per app/routers/cart.py's 502 on MedusaClientError.
-      // Swallowing this silently made a broken Cart Bridge look like a dead
-      // button, which is exactly how it was reported by the client.
-      if (err instanceof ApiError && err.status === 401) {
-        tab?.close();
-        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
-      // The product page still works without the cart — send the tab there.
-      if (tab) tab.location.href = productUrl;
-      setCartError(
-        err instanceof ApiError ? err.message : "Couldn't add this to your cart. Please try again.",
-      );
-    } finally {
-      setAdding(false);
-    }
+    // The product page still works without the cart, so a failed add lands there.
+    setCartError(await sendToStoreCart([variantId], productPath, productPath));
+    setAdding(false);
   }
 
   const resolved = product.resolution.status === "resolved" ? product.resolution : null;
