@@ -347,7 +347,14 @@ export const api = {
   addToCart: (items: { medusa_variant_id: string; quantity?: number }[]) =>
     request<{ store_cart_url: string }>("/api/v1/cart/add", {
       method: "POST",
-      body: JSON.stringify({ items }),
+      // A single product goes in the original { medusa_variant_id } shape, which every
+      // backend version accepts, so "Add to plan" keeps working whichever of app and
+      // API deploys first. Only the whole-plan add needs the newer `items` form.
+      body: JSON.stringify(
+        items.length === 1
+          ? { medusa_variant_id: items[0].medusa_variant_id, quantity: items[0].quantity ?? 1 }
+          : { items },
+      ),
     }),
 
   // Plain-login SSO handoff to store.strengthiva.com (distinct from addToCart's
