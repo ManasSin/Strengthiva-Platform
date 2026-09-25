@@ -77,7 +77,7 @@ export default async function migrateLocalMedia({ container }: ExecArgs) {
     const urls = [product.thumbnail, ...(product.images ?? []).map((i) => i.url)]
     if (!urls.some((u) => localPrefixOf(u))) continue
 
-    const images = []
+    const images: { url: string }[] = []
     for (const image of product.images ?? []) {
       images.push({ url: (await migrate(image.url)) as string })
     }
