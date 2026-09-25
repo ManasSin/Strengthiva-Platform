@@ -72,7 +72,7 @@ export default function HeaderSearch({
   }
 
   return (
-    <div className="search-wrap" ref={wrapRef} style={onSearchPage ? { maxWidth: 480 } : undefined}>
+    <div className="search-wrap" ref={wrapRef}>
       <SearchIcon className="search-icon" />
       <input
         className="search-input"

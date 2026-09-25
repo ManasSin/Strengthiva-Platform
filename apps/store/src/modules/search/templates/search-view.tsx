@@ -44,19 +44,16 @@ export default function SearchView({
 
   return (
     <>
-      <section className="section pt-0" style={{ paddingTop: 8 }}>
+      {/* One section: a compact result line straight above the grid, not the
+          handoff's eyebrow + big heading + rule + empty band. */}
+      <section className="section" style={{ paddingTop: 16 }}>
         <div className="container">
-          <p className="eyebrow">Search results</p>
-          <h1 className="h2">{ql ? `“${query}”` : "Search Strengthiva"}</h1>
-          <p className="lead" style={{ marginTop: 8 }}>
+          <h1 className="visually-hidden">{ql ? `Search results for “${query}”` : "Search Strengthiva"}</h1>
+          <p className="meta" style={{ marginBottom: 22 }}>
             {ql
-              ? `${matches.length} result${matches.length === 1 ? "" : "s"} for "${query}"`
+              ? `${matches.length} result${matches.length === 1 ? "" : "s"} for “${query}”`
               : "Try a product name, an ingredient like tulsi or ashwagandha, or a concern like digestion."}
           </p>
-        </div>
-      </section>
-      <section className="section">
-        <div className="container">
           {ql && (
             <ProductGrid
               products={matches}

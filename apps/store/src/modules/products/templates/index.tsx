@@ -95,9 +95,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, images, rela
 
   return (
     <>
-      <section className="section pt-0" style={{ paddingBottom: 8 }}>
+      {/* Crumbs and the product share one section, so there's no hairline
+          rule and empty band between them. */}
+      <section className="section" style={{ paddingTop: 16 }} data-testid="product-container">
         <div className="container">
-          <nav className="crumbs" aria-label="Breadcrumb">
+          <nav className="crumbs" style={{ marginBottom: 18 }} aria-label="Breadcrumb">
             <LocalizedClientLink href="/">Home</LocalizedClientLink>
             <span className="sep">/</span>
             {category ? (
@@ -109,9 +111,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, images, rela
             <span>{product.title}</span>
           </nav>
         </div>
-      </section>
-
-      <section className="section pt-0" data-testid="product-container">
         <div className="container grid-2-1" style={{ gap: 48 }}>
           <ProductGallery images={galleryImages} form={productForm(product)} name={product.title ?? ""} />
           <div>

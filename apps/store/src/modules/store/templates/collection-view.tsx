@@ -32,7 +32,6 @@ export default function CollectionView({
   initialCategory = "all",
   initialSort = "created_at",
   fixedTitle,
-  fixedIntro,
 }: {
   products: CardProduct[]
   categories: CategoryTile[]
@@ -40,7 +39,6 @@ export default function CollectionView({
   initialSort?: Sort
   /** Collections pages have their own title and don't switch category in the URL. */
   fixedTitle?: string
-  fixedIntro?: string
 }) {
   const { countryCode } = useParams() as { countryCode: string }
   const [cat, setCatState] = useState(initialCategory)
@@ -77,12 +75,7 @@ export default function CollectionView({
     return l
   }, [products, cat, types, prices, inStock, sort])
 
-  const title = fixedTitle ?? (category ? category.label : "Shop All Products")
-  const intro =
-    fixedIntro ??
-    (category
-      ? category.blurb
-      : "Classical formulations. No fillers.")
+  const title = fixedTitle ?? (category ? category.label : "Shop All")
 
   useEffect(() => {
     if (!drawerOpen) return
@@ -193,28 +186,19 @@ export default function CollectionView({
 
   return (
     <>
-      <section className="section pt-0" style={{ paddingBottom: 0 }}>
+      {/* Breadcrumb straight into the toolbar — the handoff's title + intro
+          block in between was dropped (the crumb and the active-filter chip
+          already name the category). The h1 stays for screen readers / SEO. */}
+      <section className="section" style={{ paddingTop: 16 }} data-testid="category-container">
         <div className="container">
-          <nav className="crumbs" style={{ marginBottom: 18 }} aria-label="Breadcrumb">
+          <nav className="crumbs" style={{ marginBottom: 14 }} aria-label="Breadcrumb">
             <LocalizedClientLink href="/">Home</LocalizedClientLink>
             <span className="sep">/</span>
-            <span>{fixedTitle ?? (category ? category.label : "Shop All")}</span>
+            <span>{title}</span>
           </nav>
-          <div className="collection-head">
-            <div>
-              <h1 className="h2" data-testid="store-page-title">
-                {title}
-              </h1>
-              <p className="lead" style={{ marginTop: 8 }}>
-                {intro}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" data-testid="category-container">
-        <div className="container">
+          <h1 className="visually-hidden" data-testid="store-page-title">
+            {title}
+          </h1>
           <div className="toolbar">
             <div className="row" style={{ flexWrap: "wrap" }}>
               <button className="filter-chip" onClick={() => setDrawerOpen(true)}>

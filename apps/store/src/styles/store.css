@@ -434,6 +434,10 @@ ul{list-style:none;margin:0;padding:0}
    hero/bundle strips three-across instead of stacking into three full-screen
    bottles. */
 .nav-actions{margin-left:auto}
+/* Nav labels never wrap onto two lines (the search box shrinks instead). */
+.main-nav a,.nav-drop-trigger{white-space:nowrap}
+.main-nav{flex:0 0 auto}
+.search-wrap{min-width:0}
 .grid-3.keep-3{grid-template-columns:repeat(3,1fr)}
 /* The logo image stands in for the prototype's text wordmark. */
 .logo-img{height:44px;width:auto}
