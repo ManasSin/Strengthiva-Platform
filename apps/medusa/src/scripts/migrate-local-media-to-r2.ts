@@ -1,13 +1,11 @@
 // One-off: moves product images still stored by Medusa's local-disk file provider
-// (URLs like http://localhost:9000/static/<file>, unreachable from any browser) to the
+// (http://localhost:9000/static/<file>, or the LOCAL_FILE_PUBLIC_URL stopgap) to the
 // configured file provider — Cloudflare R2 once R2_* is set (see medusa-config.ts) —
 // and rewrites the product thumbnail/image URLs to the new ones.
 //
-// Run inside the Medusa container AFTER R2 is configured, with MEDIA_DIR pointing at
-// the saved files (the container's own static/ is wiped on every deploy; the
-// 2026-09-25 uploads were copied to /opt/strengthiva-media-backup on the VPS):
-//   docker cp /opt/strengthiva-media-backup/. strengthiva-platform-medusa-1:/tmp/media/
-//   docker exec -e MEDIA_DIR=/tmp/media -e DRY_RUN=1 strengthiva-platform-medusa-1 \
+// Run inside the Medusa container AFTER R2 is configured. MEDIA_DIR defaults to the
+// container's static/ (the medusa_uploads volume):
+//   docker exec -e DRY_RUN=1 strengthiva-platform-medusa-1 \
 //     npx medusa exec ./src/scripts/migrate-local-media-to-r2.ts
 // then again without DRY_RUN. Idempotent: already-migrated URLs are skipped.
 import { ExecArgs } from "@medusajs/framework/types"
@@ -15,7 +13,16 @@ import { Modules } from "@medusajs/framework/utils"
 import { existsSync, readFileSync } from "fs"
 import path from "path"
 
-const LOCAL_PREFIX = "http://localhost:9000/static/"
+// URLs the local-disk provider has written: its default, and the public stopgap URL
+// (LOCAL_FILE_PUBLIC_URL, see medusa-config.ts) used before R2 was configured.
+const LOCAL_PREFIXES = [
+  "http://localhost:9000/static/",
+  ...(process.env.LOCAL_FILE_PUBLIC_URL
+    ? [`${process.env.LOCAL_FILE_PUBLIC_URL.replace(/\/+$/, "")}/`]
+    : []),
+]
+const localPrefixOf = (url: string | null | undefined) =>
+  url ? LOCAL_PREFIXES.find((p) => url.startsWith(p)) : undefined
 
 const MIME: Record<string, string> = {
   ".png": "image/png",
@@ -38,9 +45,10 @@ export default async function migrateLocalMedia({ container }: ExecArgs) {
   const moved = new Map<string, string>() // old URL -> new URL, so a shared file uploads once
 
   async function migrate(url: string | null | undefined): Promise<string | null | undefined> {
-    if (!url || !url.startsWith(LOCAL_PREFIX)) return url
+    const prefix = localPrefixOf(url)
+    if (!url || !prefix) return url
     if (moved.has(url)) return moved.get(url)
-    const name = decodeURIComponent(url.slice(LOCAL_PREFIX.length))
+    const name = decodeURIComponent(url.slice(prefix.length))
     const filePath = path.join(mediaDir, name)
     if (!existsSync(filePath)) {
       logger.warn(`Missing file for ${url} (looked in ${filePath}); leaving it as is`)
@@ -67,7 +75,7 @@ export default async function migrateLocalMedia({ container }: ExecArgs) {
   let updated = 0
   for (const product of products) {
     const urls = [product.thumbnail, ...(product.images ?? []).map((i) => i.url)]
-    if (!urls.some((u) => u?.startsWith(LOCAL_PREFIX))) continue
+    if (!urls.some((u) => localPrefixOf(u))) continue
 
     const images = []
     for (const image of product.images ?? []) {

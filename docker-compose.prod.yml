@@ -30,6 +30,11 @@ services:
       - "127.0.0.1:${MEDUSA_PORT:-9000}:9000"
     env_file:
       - apps/medusa/.env
+    # Uploaded files while the local-disk file provider is in use (until R2 is
+    # configured; see medusa-config.ts). Without this they lived in the container
+    # and were deleted by every deploy.
+    volumes:
+      - medusa_uploads:/app/apps/medusa/.medusa/server/static
     depends_on:
       medusa-redis:
         condition: service_started
@@ -95,6 +100,7 @@ services:
 
 volumes:
   medusa_redis_data:
+  medusa_uploads:
 
 networks:
   strengthiva_public:
