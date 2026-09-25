@@ -3,8 +3,11 @@ import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
 export const listCategories = async (query?: Record<string, unknown>) => {
+  // Refetch at most every 60s: force-cache with no revalidate kept category data
+  // (including images set in the admin) until the next deploy.
   const next = {
     ...(await getCacheOptions("categories")),
+    revalidate: 60,
   }
 
   const limit = query?.limit || 100
@@ -29,8 +32,11 @@ export const listCategories = async (query?: Record<string, unknown>) => {
 export const getCategoryByHandle = async (categoryHandle: string[]) => {
   const handle = `${categoryHandle.join("/")}`
 
+  // Refetch at most every 60s: force-cache with no revalidate kept category data
+  // (including images set in the admin) until the next deploy.
   const next = {
     ...(await getCacheOptions("categories")),
+    revalidate: 60,
   }
 
   return sdk.client
