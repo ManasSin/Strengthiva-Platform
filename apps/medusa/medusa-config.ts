@@ -17,10 +17,17 @@ const r2 = {
   publicUrl: process.env.R2_PUBLIC_URL?.replace(/\/+$/, ''),
 }
 const r2Configured = Object.values(r2).every(Boolean)
-if (process.env.NODE_ENV === 'production' && !r2Configured) {
+
+// Stopgap until R2 exists: keep the local-disk provider, but give it the public URL
+// its files are actually served from (Medusa serves static/ at /static, and
+// MEDUSA_STORE_DOMAIN proxies it), e.g. https://medusa-store.strengthiva.com/static.
+// docker-compose.prod.yml mounts static/ on a volume so uploads survive deploys.
+// Unset, the provider records http://localhost:9000/static/... URLs.
+const localFilePublicUrl = process.env.LOCAL_FILE_PUBLIC_URL?.replace(/\/+$/, '')
+if (process.env.NODE_ENV === 'production' && !r2Configured && !localFilePublicUrl) {
   console.warn(
-    '[medusa-config] R2_* is not fully set; uploads fall back to local disk, which ' +
-      'is lost on redeploy and serves unreachable localhost URLs.'
+    '[medusa-config] Neither R2_* nor LOCAL_FILE_PUBLIC_URL is set; uploaded images ' +
+      'get unreachable http://localhost:9000/static/... URLs.'
   )
 }
 
@@ -73,7 +80,22 @@ module.exports = defineConfig({
             },
           },
         ]
-      : []),
+      : localFilePublicUrl
+        ? [
+            {
+              resolve: '@medusajs/medusa/file',
+              options: {
+                providers: [
+                  {
+                    resolve: '@medusajs/medusa/file-local',
+                    id: 'local',
+                    options: { backend_url: localFilePublicUrl },
+                  },
+                ],
+              },
+            },
+          ]
+        : []),
     {
       // Providing our own Modules.AUTH entry replaces Medusa's default entirely
       // (config entries are merged by key, last one wins) — so "emailpass" has to
