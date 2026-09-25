@@ -39,6 +39,12 @@ export default function CategoryTemplate({
 
   getParents(category)
 
+  // Category images are set from the Medusa admin's "Images" panel on a category
+  // (apps/medusa/src/admin/widgets/category-images.tsx) and stored in metadata;
+  // Medusa categories have no image field of their own.
+  const cover =
+    typeof category.metadata?.thumbnail === "string" ? category.metadata.thumbnail : null
+
   return (
     <div
       className="flex flex-col small:flex-row small:items-start py-6 content-container"
@@ -50,6 +56,17 @@ export default function CategoryTemplate({
         hideOptionsPicker
       />
       <div className="w-full">
+        {cover && (
+          <div className="mb-8 overflow-hidden rounded-lg bg-ui-bg-subtle">
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote R2 URL; next/image is unoptimized here anyway */}
+            <img
+              src={cover}
+              alt={category.name}
+              className="aspect-[3/1] w-full object-cover"
+              data-testid="category-cover-image"
+            />
+          </div>
+        )}
         <div className="flex flex-row mb-8 text-2xl-semi gap-4">
           {parents &&
             parents.map((parent) => (

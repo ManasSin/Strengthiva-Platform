@@ -86,8 +86,12 @@ jobs:
           else
             echo "$changed" | grep -q '^apps/app/'   && svcs="$svcs app"
             echo "$changed" | grep -q '^apps/store/' && svcs="$svcs store"
-            echo "$changed" | grep -q '^apps/medusa/' && svcs="$svcs medusa"
           fi
+          # Medusa is checked outside the if/else: a change that also touched shared files
+          # (e.g. docker-compose.prod.yml adding Medusa's uploads volume) used to skip it,
+          # shipping the compose change without the Medusa code it belongs to. A compose
+          # change can alter Medusa's container too, so it redeploys Medusa as well.
+          echo "$changed" | grep -qE '^(apps/medusa/|docker-compose.prod.yml)' && svcs="$svcs medusa"
           svcs=$(echo "$svcs" | xargs)
           echo "services=$svcs" >> "$GITHUB_OUTPUT"
           echo "Will deploy: '${svcs:-(nothing)}'"

@@ -2,6 +2,39 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+// Uploaded files (product images, category images, CSV imports) go to Cloudflare R2
+// through Medusa's S3 provider. Without a file module Medusa falls back to its
+// local-disk provider, which in production saved images inside the container (gone on
+// the next deploy) under http://localhost:9000/static/... URLs no browser can load.
+// Local dev without R2 settings keeps that local provider.
+const r2 = {
+  endpoint: process.env.R2_ENDPOINT_URL,
+  bucket: process.env.R2_BUCKET,
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  // Public base URL the bucket is served from: a custom domain on the bucket
+  // (e.g. https://media.strengthiva.com) or its r2.dev URL. No trailing slash.
+  publicUrl: process.env.R2_PUBLIC_URL?.replace(/\/+$/, ''),
+}
+const r2Configured = Object.values(r2).every(Boolean)
+
+// Stopgap until R2 exists: keep the local-disk provider, but give it the public URL
+// its files are actually served from (Medusa serves static/ at /static, and
+// MEDUSA_STORE_DOMAIN proxies it), e.g. https://medusa-store.strengthiva.com/static.
+// docker-compose.prod.yml mounts static/ on a volume so uploads survive deploys.
+// Unset, the provider records http://localhost:9000/static/... URLs.
+const localFilePublicUrl = process.env.LOCAL_FILE_PUBLIC_URL?.replace(/\/+$/, '')
+if (process.env.NODE_ENV === 'production' && !r2Configured && !localFilePublicUrl) {
+  console.warn(
+    '[medusa-config] Neither R2_* nor LOCAL_FILE_PUBLIC_URL is set; uploaded images ' +
+      'get unreachable http://localhost:9000/static/... URLs.'
+  )
+}
+
+// Admin dashboard upload cap. The dashboard defaults to 1 MB, which rejected normal
+// product photos. Build-time (inlined into the admin bundle).
+const ADMIN_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -14,7 +47,55 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET,
     }
   },
+  admin: {
+    maxUploadFileSize: ADMIN_MAX_UPLOAD_BYTES,
+  },
   modules: [
+    ...(r2Configured
+      ? [
+          {
+            resolve: '@medusajs/medusa/file',
+            options: {
+              providers: [
+                {
+                  resolve: '@medusajs/medusa/file-s3',
+                  id: 'r2',
+                  options: {
+                    endpoint: r2.endpoint,
+                    bucket: r2.bucket,
+                    access_key_id: r2.accessKeyId,
+                    secret_access_key: r2.secretAccessKey,
+                    file_url: r2.publicUrl,
+                    region: 'auto',
+                    // Keys land under medusa/ so the bucket can be shared with the
+                    // backend's other files (batch certificates).
+                    prefix: 'medusa/',
+                    // R2 has no object ACLs (public access is a bucket setting), so
+                    // don't send Medusa's default public-read ACL header.
+                    acl: false,
+                    additional_client_config: { forcePathStyle: true },
+                  },
+                },
+              ],
+            },
+          },
+        ]
+      : localFilePublicUrl
+        ? [
+            {
+              resolve: '@medusajs/medusa/file',
+              options: {
+                providers: [
+                  {
+                    resolve: '@medusajs/medusa/file-local',
+                    id: 'local',
+                    options: { backend_url: localFilePublicUrl },
+                  },
+                ],
+              },
+            },
+          ]
+        : []),
     {
       // Providing our own Modules.AUTH entry replaces Medusa's default entirely
       // (config entries are merged by key, last one wins) — so "emailpass" has to
