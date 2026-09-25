@@ -1,6 +1,6 @@
 import { Catalog } from "@lib/data/store-catalog"
 import { HERO_PRODUCT_HANDLES, HOME_BUNDLE, STORE_OFFER } from "@lib/store-content"
-import { formatPrice, numberWord } from "@lib/util/store-catalog"
+import { formatPrice } from "@lib/util/store-catalog"
 import { ProductVisual } from "@modules/common/components/bottle"
 import CtaBand from "@modules/common/components/cta-band"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -18,8 +18,9 @@ import { ProductGrid } from "@modules/products/components/product-card"
 
 /*
   Home — index.html from the "store redesign 02" handoff, section for section,
-  on the live Medusa catalog. Counts ("14 classical formulations", "Eight
-  ranges") are computed from the catalog rather than hardcoded.
+  on the live Medusa catalog. The handoff's catalog-size claims ("14
+  classical formulations", "Nine ranges") are dropped on purpose: the range
+  is growing, and the copy shouldn't advertise how small it is today.
 */
 
 const FAQ = [
@@ -79,7 +80,7 @@ export default function HomeTemplate({ catalog }: { catalog: Catalog }) {
               Ayurveda, without the guesswork
             </h1>
             <p className="lead" style={{ marginTop: 10 }}>
-              {cards.length} classical formulations. No fillers, no fluff.
+              Classical formulations. No fillers, no fluff.
             </p>
             <div className="row" style={{ marginTop: 20, flexWrap: "wrap" }}>
               <LocalizedClientLink href="/store" className="btn btn-primary mobile-full">
@@ -141,7 +142,7 @@ export default function HomeTemplate({ catalog }: { catalog: Catalog }) {
           <div className="row-between" style={{ marginBottom: 32, flexWrap: "wrap" }}>
             <div>
               <p className="eyebrow">Shop by category</p>
-              <h2 className="h2">{numberWord(tiles.length)} ranges, one classical system</h2>
+              <h2 className="h2">Every range, one classical system</h2>
             </div>
             <LocalizedClientLink href="/store" className="btn btn-ghost btn-arrow">
               View all categories
@@ -167,7 +168,7 @@ export default function HomeTemplate({ catalog }: { catalog: Catalog }) {
           <div className="row-between" style={{ marginBottom: 28, flexWrap: "wrap" }}>
             <div>
               <p className="eyebrow">The full range</p>
-              <h2 className="h2">Every formulation, one page</h2>
+              <h2 className="h2">Explore the range</h2>
             </div>
             <LocalizedClientLink href="/store" className="btn btn-ghost btn-arrow">
               View all products

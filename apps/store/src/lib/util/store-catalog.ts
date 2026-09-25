@@ -222,11 +222,3 @@ export function formatPrice(amount: number | null, currencyCode = "inr") {
     currency: currencyCode.toUpperCase(),
   }).format(amount)
 }
-
-const NUMBER_WORDS = [
-  "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight",
-  "Nine", "Ten", "Eleven", "Twelve",
-]
-
-/** "Eight" for 8, "14" for 14 — for headings like "Eight ranges, one system". */
-export const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n)

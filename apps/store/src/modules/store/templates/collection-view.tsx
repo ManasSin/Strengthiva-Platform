@@ -81,8 +81,8 @@ export default function CollectionView({
   const intro =
     fixedIntro ??
     (category
-      ? `${category.blurb} ${list.length} formulation${list.length === 1 ? "" : "s"} currently listed in this range.`
-      : `${products.length} classical formulations. No fillers.`)
+      ? category.blurb
+      : "Classical formulations. No fillers.")
 
   useEffect(() => {
     if (!drawerOpen) return

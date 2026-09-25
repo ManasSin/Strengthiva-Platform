@@ -21,7 +21,7 @@ export default async function CollectionTemplate({
       categories={catalog.tiles}
       initialSort={sortBy ?? "created_at"}
       fixedTitle={collection.title}
-      fixedIntro={`${catalog.cards.length} formulation${catalog.cards.length === 1 ? "" : "s"} in this collection.`}
+      fixedIntro={collection.metadata?.description ? String(collection.metadata.description) : "Classical formulations. No fillers."}
     />
   )
 }
