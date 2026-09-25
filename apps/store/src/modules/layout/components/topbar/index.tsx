@@ -12,11 +12,12 @@ import {
   SearchIcon,
   UserIcon,
 } from "@modules/common/components/store-icons"
+import ConcernMenu from "@modules/layout/components/concern-menu"
 import HeaderSearch from "@modules/layout/components/header-search"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams, usePathname } from "next/navigation"
-import { Suspense } from "react"
+import { Fragment, Suspense } from "react"
 
 export type NavLink = { label: string; href: string }
 
@@ -75,10 +76,11 @@ export default function Topbar({
             />
           </LocalizedClientLink>
           <nav className="main-nav" aria-label="Primary">
-            {navLinks.map((l) => (
-              <LocalizedClientLink key={l.href} href={l.href}>
-                {l.label}
-              </LocalizedClientLink>
+            {navLinks.map((l, i) => (
+              <Fragment key={l.href}>
+                <LocalizedClientLink href={l.href}>{l.label}</LocalizedClientLink>
+                {i === 0 && <ConcernMenu categories={categories} />}
+              </Fragment>
             ))}
           </nav>
           <Suspense fallback={<div className="search-wrap" />}>

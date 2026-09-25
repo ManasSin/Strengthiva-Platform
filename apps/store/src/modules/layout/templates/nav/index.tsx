@@ -6,11 +6,11 @@ import CartDrawer from "@modules/layout/components/cart-drawer"
 import Topbar, { NavLink } from "@modules/layout/components/topbar"
 
 /*
-  Header for the "store redesign 02" handoff (docs/redesign/store redesign 02).
-  The nav mirrors index.html: Shop All, three category shortcuts, Shop by
-  Concern, Learn Ayurveda, Personalized Recommendations. The category links are
-  the real Medusa categories named in NAV_CATEGORY_HANDLES — any that don't
-  exist are skipped rather than linking to a 404.
+  Header for the "store redesign 02" handoff (docs/redesign/store redesign 02),
+  with the desktop nav trimmed to Shop All · Shop by Concern (dropdown of every
+  category) · Personalized Recommendations. The mobile menu keeps the
+  handoff's category shortcuts (NAV_CATEGORY_HANDLES + Renal Health); any that
+  don't exist in Medusa are skipped rather than linking to a 404.
 
   Country/language selectors stay removed (India-only launch — see
   docs/platform-architecture/tech-specs/store-frontend/integration-notes.md).
@@ -26,11 +26,11 @@ export default async function Nav({ countryCode }: { countryCode: string }) {
     (t): t is NonNullable<typeof t> => !!t
   )
 
+  // Desktop bar: Shop All, the "Shop by Concern" dropdown (every category —
+  // rendered by Topbar after the first link), then Personalized
+  // Recommendations. Learn Ayurveda lives in the footer.
   const navLinks: NavLink[] = [
     { label: "Shop All", href: "/store" },
-    ...navCategories.map((c) => ({ label: c.label, href: `/categories/${c.handle}` })),
-    { label: "Shop by Concern", href: "/#concerns" },
-    { label: "Learn Ayurveda", href: "/learn" },
     { label: "Personalized Recommendations", href: "/personalized" },
   ]
 
