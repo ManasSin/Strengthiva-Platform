@@ -1,51 +1,27 @@
-import { Suspense } from "react"
-
-import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
-import RefinementList from "@modules/store/components/refinement-list"
-import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
-import PaginatedProducts from "@modules/store/templates/paginated-products"
+import { getCatalog } from "@lib/data/store-catalog"
 import { HttpTypes } from "@medusajs/types"
-import { OptionValueIds } from "@lib/util/product-option-filters"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+import CollectionView from "@modules/store/templates/collection-view"
 
-export default function CollectionTemplate({
+/* A Medusa collection, in the redesign's collection-page layout. */
+export default async function CollectionTemplate({
   sortBy,
   collection,
-  page,
   countryCode,
-  optionValueIds,
 }: {
   sortBy?: SortOptions
   collection: HttpTypes.StoreCollection
-  page?: string
   countryCode: string
-  optionValueIds?: OptionValueIds
 }) {
-  const pageNumber = page ? parseInt(page) : 1
-  const sort = sortBy || "created_at"
+  const catalog = await getCatalog(countryCode, { collection_id: [collection.id] })
 
   return (
-    <div className="flex flex-col small:flex-row small:items-start py-6 content-container">
-      <RefinementList sortBy={sort} hideOptionsPicker />
-      <div className="w-full">
-        <div className="mb-8 text-2xl-semi">
-          <h1>{collection.title}</h1>
-        </div>
-        <Suspense
-          fallback={
-            <SkeletonProductGrid
-              numberOfProducts={collection.products?.length}
-            />
-          }
-        >
-          <PaginatedProducts
-            sortBy={sort}
-            page={pageNumber}
-            collectionId={collection.id}
-            countryCode={countryCode}
-            optionValueIds={optionValueIds}
-          />
-        </Suspense>
-      </div>
-    </div>
+    <CollectionView
+      products={catalog.cards}
+      categories={catalog.tiles}
+      initialSort={sortBy ?? "created_at"}
+      fixedTitle={collection.title}
+      fixedIntro={`${catalog.cards.length} formulation${catalog.cards.length === 1 ? "" : "s"} in this collection.`}
+    />
   )
 }

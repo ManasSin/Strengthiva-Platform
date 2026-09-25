@@ -7,11 +7,9 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import PaymentContainer, {
   StripeCardContainer,
 } from "@modules/checkout/components/payment-container"
-import Divider from "@modules/common/components/divider"
 import {
   Button,
   Container,
-  Heading,
   Text,
   clx,
 } from "@modules/common/components/ui"
@@ -112,31 +110,25 @@ const Payment = ({
   }, [isOpen])
 
   return (
-    <div className="bg-bg">
-      <div className="flex flex-row items-center justify-between mb-6">
-        <Heading
-          level="h2"
-          className={clx(
-            "flex flex-row text-3xl-regular gap-x-2 items-baseline",
-            {
-              "opacity-50 pointer-events-none select-none":
-                !isOpen && !paymentReady,
-            }
-          )}
+    <div className="panel" style={{ marginBottom: 20 }}>
+      <div className="row-between" style={{ marginBottom: 16 }}>
+        <h3
+          className={clx("flex items-center gap-2", {
+            "opacity-50 pointer-events-none select-none":
+              !isOpen && !paymentReady,
+          })}
         >
-          Payment
+          Payment method
           {!isOpen && paymentReady && <CheckCircleSolid />}
-        </Heading>
+        </h3>
         {!isOpen && paymentReady && (
-          <Text>
-            <button
-              onClick={handleEdit}
-              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
-              data-testid="edit-payment-button"
-            >
-              Edit
-            </button>
-          </Text>
+          <button
+            onClick={handleEdit}
+            className="btn btn-ghost btn-sm"
+            data-testid="edit-payment-button"
+          >
+            Edit
+          </button>
         )}
       </div>
       <div>
@@ -192,7 +184,7 @@ const Payment = ({
 
           <Button
             size="large"
-            className="mt-6"
+            className="btn btn-primary btn-block"
             onClick={handleSubmit}
             isLoading={isLoading}
             disabled={
@@ -258,7 +250,6 @@ const Payment = ({
           ) : null}
         </div>
       </div>
-      <Divider className="mt-8" />
     </div>
   )
 }

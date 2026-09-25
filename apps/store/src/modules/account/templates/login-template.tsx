@@ -1,5 +1,4 @@
 import { getAppURL } from "@lib/util/env"
-import { Heading, Text, Button } from "@modules/common/components/ui"
 
 // One shared Strengthiva account across app. and store. (decided
 // docs/platform-architecture/02-decisions-log.md) — store. no longer owns its
@@ -18,17 +17,16 @@ const LoginTemplate = () => {
   const continueUrl = `${appUrl}/login?redirect=${encodeURIComponent(`${baseUrl}/account`)}`
 
   return (
-    <div className="w-full flex justify-center px-8 py-16">
-      <div className="max-w-sm w-full flex flex-col items-center text-center">
-        <Heading level="h1" className="txt-large-plus">
-          One account, everywhere
-        </Heading>
-        <Text className="mt-2 text-muted">
+    <div className="row" style={{ justifyContent: "center", padding: "64px 24px" }}>
+      <div className="panel" style={{ maxWidth: 480, width: "100%", textAlign: "center" }}>
+        <p className="eyebrow">Account</p>
+        <h1 className="h2">Sign in to Strengthiva</h1>
+        <p className="lead" style={{ margin: "12px auto 0" }}>
           Your Strengthiva account works across the assessment app and the store.
           Sign in once on app.strengthiva.com.
-        </Text>
-        <a href={continueUrl} className="w-full mt-8">
-          <Button className="w-full">Continue with your Strengthiva account</Button>
+        </p>
+        <a href={continueUrl} className="btn btn-primary btn-block" style={{ marginTop: 28 }}>
+          Continue with your Strengthiva account
         </a>
       </div>
     </div>

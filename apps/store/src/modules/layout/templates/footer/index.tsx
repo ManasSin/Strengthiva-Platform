@@ -1,150 +1,65 @@
+import { listCategories } from "@lib/data/categories"
+import { NAV_CATEGORY_HANDLES, toCategoryTiles } from "@lib/util/store-catalog"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Image from "next/image"
-import { listCategories } from "@lib/data/categories";
-import { listCollections } from "@lib/data/collections";
-import { getAppURL } from "@lib/util/env";
-import { Text, clx } from "@modules/common/components/ui";
 
-import LocalizedClientLink from "@modules/common/components/localized-client-link";
+/*
+  Footer from the "store redesign 02" handoff (.pagefoot). The Shop column uses
+  the same real categories as the header's shortcuts.
 
+  Deviation from the prototype, on purpose: its payment chips list "COD", but
+  the store takes payment through Razorpay only (no cash-on-delivery provider
+  in apps/medusa/medusa-config.ts), so COD is left off rather than promised.
+  The prototype's policy links were "#" placeholders; they stay out until the
+  policy pages exist.
+*/
 export default async function Footer() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  });
-  const productCategories = await listCategories();
-  const appUrl = getAppURL();
+  const tiles = toCategoryTiles(await listCategories())
+  const byHandle = new Map(tiles.map((t) => [t.handle, t]))
+  const shopCategories = NAV_CATEGORY_HANDLES.map((h) => byHandle.get(h)).filter(
+    (t): t is NonNullable<typeof t> => !!t
+  )
 
   return (
-    <footer className="border-t border-hairline bg-bg w-full">
-      <div className="content-container flex flex-col w-full">
-        <div className="flex flex-col gap-y-6 xsmall:flex-row items-start justify-between py-14">
+    <footer className="pagefoot">
+      <div className="container">
+        <div className="grid-4" style={{ gap: 32 }}>
           <div>
-            <LocalizedClientLink
-              href="/"
-              className="inline-flex transition-opacity hover:opacity-80"
-              aria-label="Strengthiva home"
-            >
-              <Image
-                src="/logo-green.png"
-                alt="Strengthiva"
-                width={400}
-                height={321}
-                className="h-20 w-auto"
-              />
+            <LocalizedClientLink href="/" className="logo" aria-label="Strengthiva home" style={{ padding: 0 }}>
+              <Image src="/logo-green.png" alt="Strengthiva" width={400} height={321} className="logo-img" />
             </LocalizedClientLink>
+            <p className="pf-copy">© {new Date().getFullYear()} Strengthiva. Modern Ayurvedic Wisdom.</p>
           </div>
-          <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
-            {productCategories && productCategories?.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="font-mono text-label uppercase text-muted">
-                  Categories
-                </span>
-                <ul
-                  className="grid grid-cols-1 gap-2"
-                  data-testid="footer-categories"
-                >
-                  {productCategories?.slice(0, 6).map((c) => {
-                    if (c.parent_category) {
-                      return;
-                    }
-
-                    const children =
-                      c.category_children?.map((child) => ({
-                        name: child.name,
-                        handle: child.handle,
-                        id: child.id,
-                      })) || null;
-
-                    return (
-                      <li
-                        className="flex flex-col gap-2 text-muted text-sm"
-                        key={c.id}
-                      >
-                        <LocalizedClientLink
-                          className={clx(
-                            "border-b border-transparent transition-colors hover:border-b-accent hover:text-forest",
-                            children && "font-medium text-forest"
-                          )}
-                          href={`/categories/${c.handle}`}
-                          data-testid="category-link"
-                        >
-                          {c.name}
-                        </LocalizedClientLink>
-                        {children && (
-                          <ul className="grid grid-cols-1 ml-3 gap-2">
-                            {children &&
-                              children.map((child) => (
-                                <li key={child.id}>
-                                  <LocalizedClientLink
-                                    className="border-b border-transparent transition-colors hover:border-b-accent hover:text-forest"
-                                    href={`/categories/${child.handle}`}
-                                    data-testid="category-link"
-                                  >
-                                    {child.name}
-                                  </LocalizedClientLink>
-                                </li>
-                              ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-            {collections && collections.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="font-mono text-label uppercase text-muted">
-                  Collections
-                </span>
-                <ul
-                  className={clx(
-                    "grid grid-cols-1 gap-2 text-muted text-sm",
-                    {
-                      "grid-cols-2": (collections?.length || 0) > 3,
-                    }
-                  )}
-                >
-                  {collections?.slice(0, 6).map((c) => (
-                    <li key={c.id}>
-                      <LocalizedClientLink
-                        className="border-b border-transparent transition-colors hover:border-b-accent hover:text-forest"
-                        href={`/collections/${c.handle}`}
-                      >
-                        {c.title}
-                      </LocalizedClientLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div className="flex flex-col gap-y-2">
-              <span className="font-mono text-label uppercase text-muted">Strengthiva</span>
-              <ul className="grid grid-cols-1 gap-y-2 text-muted text-sm">
-                <li>
-                  <a href={appUrl} className="border-b border-transparent transition-colors hover:border-b-accent hover:text-forest">
-                    Health Assessment
-                  </a>
-                </li>
-                <li>
-                  <a href={`${appUrl}/diet-plans`} className="border-b border-transparent transition-colors hover:border-b-accent hover:text-forest">
-                    Diet Plans
-                  </a>
-                </li>
-                <li>
-                  <LocalizedClientLink href="/account" className="border-b border-transparent transition-colors hover:border-b-accent hover:text-forest">
-                    My Account
-                  </LocalizedClientLink>
-                </li>
-              </ul>
-            </div>
+          <div>
+            <p className="h4">Shop</p>
+            <LocalizedClientLink href="/store">All products</LocalizedClientLink>
+            {shopCategories.map((c) => (
+              <LocalizedClientLink key={c.id} href={`/categories/${c.handle}`} data-testid="category-link">
+                {c.label}
+              </LocalizedClientLink>
+            ))}
+          </div>
+          <div>
+            <p className="h4">Strengthiva</p>
+            <LocalizedClientLink href="/about">About Strengthiva</LocalizedClientLink>
+            <LocalizedClientLink href="/personalized">Personalized recommendations</LocalizedClientLink>
+            <LocalizedClientLink href="/learn">Learn Ayurveda</LocalizedClientLink>
+            <LocalizedClientLink href="/account/orders">Track an order</LocalizedClientLink>
+          </div>
+          <div>
+            <p className="h4">Get in touch</p>
+            <a href="mailto:hello@strengthiva.com">hello@strengthiva.com</a>
           </div>
         </div>
-        <div className="flex w-full mb-16 justify-between text-muted border-t border-hairline-soft pt-6">
-          <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Strengthiva. Modern Ayurvedic Wisdom.
-          </Text>
+        <div className="bottom">
+          <span>Formulations are educational and wellness-oriented, not a substitute for medical advice.</span>
+          <div className="payment-icons">
+            <span>UPI</span>
+            <span>Cards</span>
+            <span>Net Banking</span>
+          </div>
         </div>
       </div>
     </footer>
-  );
+  )
 }

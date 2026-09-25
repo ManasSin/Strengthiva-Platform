@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { listProducts } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
+import { CATALOG_PRODUCT_FIELDS, getCatalog } from "@lib/data/store-catalog"
 import { HttpTypes } from "@medusajs/types"
 
 type Props = {
@@ -88,10 +89,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${product.title} | Strengthiva Store`,
-    description: `${product.title}`,
+    title: `${product.title} — Strengthiva`,
+    description: product.subtitle || `${product.title}`,
     openGraph: {
-      title: `${product.title} | Strengthiva Store`,
+      title: `${product.title} — Strengthiva`,
       description: `${product.title}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
@@ -109,23 +110,36 @@ export default async function ProductPage(props: Props) {
     notFound()
   }
 
-  const pricedProduct = await listProducts({
-    countryCode: params.countryCode,
-    queryParams: { handle: params.handle },
-  }).then(({ response }) => response.products[0])
-
-  const images = getImagesForVariant(pricedProduct, selectedVariantId)
+  const [pricedProduct, catalog] = await Promise.all([
+    listProducts({
+      countryCode: params.countryCode,
+      queryParams: {
+        handle: params.handle,
+        fields: `${CATALOG_PRODUCT_FIELDS},*variants.images`,
+      },
+    }).then(({ response }) => response.products[0]),
+    getCatalog(params.countryCode),
+  ])
 
   if (!pricedProduct) {
     notFound()
   }
 
+  const images = getImagesForVariant(pricedProduct, selectedVariantId)
+
+  // "More from this range": same category first, then the rest of the range.
+  const categoryId = pricedProduct.categories?.[0]?.id
+  const others = catalog.cards.filter((c) => c.id !== pricedProduct.id)
+  const related = [
+    ...others.filter((c) => c.categoryId === categoryId),
+    ...others.filter((c) => c.categoryId !== categoryId),
+  ].slice(0, 4)
+
   return (
     <ProductTemplate
       product={pricedProduct}
-      region={region}
-      countryCode={params.countryCode}
       images={images ?? []}
+      related={related}
     />
   )
 }

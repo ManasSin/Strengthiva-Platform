@@ -1,8 +1,6 @@
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
-import { Heading, Text } from "@modules/common/components/ui"
-
-import Divider from "@modules/common/components/divider"
+import { Text } from "@modules/common/components/ui"
 
 type ShippingDetailsProps = {
   order: HttpTypes.StoreOrder
@@ -10,10 +8,8 @@ type ShippingDetailsProps = {
 
 const ShippingDetails = ({ order }: ShippingDetailsProps) => {
   return (
-    <div>
-      <Heading level="h2" className="flex flex-row text-3xl-regular my-6">
-        Delivery
-      </Heading>
+    <div style={{ marginTop: 24 }}>
+      <h3 style={{ marginBottom: 16 }}>Delivery</h3>
       <div className="flex items-start gap-x-8">
         <div
           className="flex flex-col w-1/3"
@@ -65,7 +61,7 @@ const ShippingDetails = ({ order }: ShippingDetailsProps) => {
           </Text>
         </div>
       </div>
-      <Divider className="mt-8" />
+      <hr className="rule" style={{ marginTop: 24 }} />
     </div>
   )
 }

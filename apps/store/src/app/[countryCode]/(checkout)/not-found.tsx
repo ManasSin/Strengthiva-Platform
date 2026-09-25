@@ -8,12 +8,16 @@ export const metadata: Metadata = {
 
 export default async function NotFound() {
   return (
-    <div className="flex flex-col gap-4 items-center justify-center min-h-[calc(100vh-64px)]">
-      <h1 className="font-display text-heading font-normal text-forest">Page not found</h1>
-      <p className="text-small-regular text-muted">
-        The page you tried to access does not exist.
-      </p>
-      <InteractiveLink href="/">Go to frontpage</InteractiveLink>
-    </div>
+    <section className="section">
+      <div className="container center" style={{ textAlign: "center" }}>
+        <h1 className="h2">Page not found</h1>
+        <p className="lead" style={{ margin: "12px auto 0" }}>
+          The page you tried to access does not exist.
+        </p>
+        <div style={{ marginTop: 16 }}>
+          <InteractiveLink href="/">Go to frontpage</InteractiveLink>
+        </div>
+      </div>
+    </section>
   )
 }

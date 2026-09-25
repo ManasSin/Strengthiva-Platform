@@ -1,41 +1,19 @@
 import { Metadata } from "next"
 
-import FeaturedProducts from "@modules/home/components/featured-products"
-import Hero from "@modules/home/components/hero"
-import { listCollections } from "@lib/data/collections"
-import { getRegion } from "@lib/data/regions"
+import { getCatalog } from "@lib/data/store-catalog"
+import HomeTemplate from "@modules/home/templates"
 
 export const metadata: Metadata = {
-  title: "Strengthiva Store — Modern Ayurvedic Essentials",
+  title: "Strengthiva — Modern Ayurvedic Essentials",
   description:
-    "Ayurvedic supplements and wellness products, recommended for your unique constitution.",
+    "Classical Ayurvedic formulations, traceable and batch-tested — shop by category, by concern, or start with a free assessment.",
 }
 
 export default async function Home(props: {
   params: Promise<{ countryCode: string }>
 }) {
-  const params = await props.params
+  const { countryCode } = await props.params
+  const catalog = await getCatalog(countryCode)
 
-  const { countryCode } = params
-
-  const region = await getRegion(countryCode)
-
-  const { collections } = await listCollections({
-    fields: "id, handle, title",
-  })
-
-  if (!collections || !region) {
-    return null
-  }
-
-  return (
-    <>
-      <Hero />
-      <div className="py-12">
-        <ul className="flex flex-col gap-x-6">
-          <FeaturedProducts collections={collections} region={region} />
-        </ul>
-      </div>
-    </>
-  )
+  return <HomeTemplate catalog={catalog} />
 }

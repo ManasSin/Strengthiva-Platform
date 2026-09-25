@@ -3,6 +3,9 @@ const path = require("path")
 module.exports = {
   darkMode: "class",
   presets: [require("@medusajs/ui-preset")],
+  // The store redesign's stylesheet (src/styles/store.css) owns `.container`;
+  // Tailwind's container utility would fight it on max-width.
+  corePlugins: { container: false },
   content: [
     "./src/app/**/*.{js,ts,jsx,tsx}",
     "./src/pages/**/*.{js,ts,jsx,tsx}",

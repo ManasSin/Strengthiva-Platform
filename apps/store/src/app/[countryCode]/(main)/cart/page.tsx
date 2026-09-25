@@ -1,21 +1,28 @@
 import { retrieveCart } from "@lib/data/cart"
 import { retrieveCustomer } from "@lib/data/customer"
+import { getCatalog } from "@lib/data/store-catalog"
 import CartTemplate from "@modules/cart/templates"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 export const metadata: Metadata = {
-  title: "Cart",
+  title: "Your Cart — Strengthiva",
   description: "View your cart",
 }
 
-export default async function Cart() {
+export default async function Cart(props: {
+  params: Promise<{ countryCode: string }>
+}) {
+  const { countryCode } = await props.params
   const cart = await retrieveCart().catch((error) => {
     console.error(error)
     return notFound()
   })
 
-  const customer = await retrieveCustomer()
+  const [customer, catalog] = await Promise.all([
+    retrieveCustomer(),
+    getCatalog(countryCode),
+  ])
 
-  return <CartTemplate cart={cart} customer={customer} />
+  return <CartTemplate cart={cart} customer={customer} upsell={catalog.cards} />
 }

@@ -1,58 +1,30 @@
-import { Suspense } from "react"
-
-import { OptionValueIds } from "@lib/util/product-option-filters"
-import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-grid"
-import RefinementList from "@modules/store/components/refinement-list"
+import { getCatalog } from "@lib/data/store-catalog"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
-import PaginatedProducts from "./paginated-products"
+import CollectionView from "./collection-view"
 
-const StoreTemplate = ({
+/*
+  /store and /categories/<handle> — both render the redesign's collection page
+  (collection.html); a category route just preselects its category.
+*/
+const StoreTemplate = async ({
   sortBy,
-  page,
-  query,
   countryCode,
-  optionValueIds,
+  categoryHandle,
 }: {
   sortBy?: SortOptions
-  page?: string
-  query?: string
   countryCode: string
-  optionValueIds?: OptionValueIds
+  categoryHandle?: string
 }) => {
-  const pageNumber = page ? parseInt(page) : 1
-  const sort = sortBy || "created_at"
-  const search = query?.trim() || ""
+  const catalog = await getCatalog(countryCode)
 
   return (
-    <div
-      className="flex flex-col small:flex-row small:items-start py-6 content-container"
-      data-testid="category-container"
-    >
-      <RefinementList sortBy={sort} query={search} search />
-      <div className="w-full">
-        <div className="mb-8">
-          <h1 data-testid="store-page-title" className="font-display text-heading font-normal text-forest">
-            {search ? `Results for “${search}”` : "All products"}
-          </h1>
-        </div>
-        {/* Keyed on everything that changes the result set so the skeleton
-            reappears while a new search/page/sort is fetched, instead of the
-            previous results sitting there looking current. */}
-        <Suspense
-          key={`${sort}-${pageNumber}-${search}`}
-          fallback={<SkeletonProductGrid />}
-        >
-          <PaginatedProducts
-            sortBy={sort}
-            page={pageNumber}
-            query={search}
-            countryCode={countryCode}
-            optionValueIds={optionValueIds}
-          />
-        </Suspense>
-      </div>
-    </div>
+    <CollectionView
+      products={catalog.cards}
+      categories={catalog.tiles}
+      initialCategory={categoryHandle ?? "all"}
+      initialSort={sortBy ?? "created_at"}
+    />
   )
 }
 
