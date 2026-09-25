@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 
+import { StoreUIProvider } from "@lib/context/store-ui"
 import { listCartOptions, retrieveCart } from "@lib/data/cart"
 import { retrieveCustomer } from "@lib/data/customer"
 import { getBaseURL } from "@lib/util/env"
@@ -13,7 +14,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
 }
 
-export default async function PageLayout(props: { children: React.ReactNode }) {
+export default async function PageLayout(props: {
+  children: React.ReactNode
+  params: Promise<{ countryCode: string }>
+}) {
+  const { countryCode } = await props.params
   const customer = await retrieveCustomer()
   const cart = await retrieveCart()
   let shippingOptions: StoreCartShippingOption[] = []
@@ -25,21 +30,26 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   }
 
   return (
-    <>
-      <Nav />
-      {customer && cart && (
-        <CartMismatchBanner customer={customer} cart={cart} />
-      )}
+    <StoreUIProvider>
+      <div className="has-tabbar">
+        <a href="#content" className="skip-link">
+          Skip to content
+        </a>
+        <Nav countryCode={countryCode} />
+        {customer && cart && (
+          <CartMismatchBanner customer={customer} cart={cart} />
+        )}
 
-      {cart && (
-        <FreeShippingPriceNudge
-          variant="popup"
-          cart={cart}
-          shippingOptions={shippingOptions}
-        />
-      )}
-      {props.children}
-      <Footer />
-    </>
+        {cart && (
+          <FreeShippingPriceNudge
+            variant="popup"
+            cart={cart}
+            shippingOptions={shippingOptions}
+          />
+        )}
+        <main id="content">{props.children}</main>
+        <Footer />
+      </div>
+    </StoreUIProvider>
   )
 }

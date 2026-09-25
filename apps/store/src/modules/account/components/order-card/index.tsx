@@ -1,7 +1,5 @@
-import { Button } from "@modules/common/components/ui"
 import { useMemo } from "react"
 
-import Thumbnail from "@modules/products/components/thumbnail"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
@@ -9,6 +7,24 @@ import { HttpTypes } from "@medusajs/types"
 type OrderCardProps = {
   order: HttpTypes.StoreOrder
 }
+
+const TRACK_STEPS = ["Order placed", "Packed", "Shipped", "Delivered"] as const
+
+const PACKED_STATUSES = [
+  "partially_fulfilled",
+  "fulfilled",
+  "partially_shipped",
+  "shipped",
+  "partially_delivered",
+  "delivered",
+]
+const SHIPPED_STATUSES = [
+  "partially_shipped",
+  "shipped",
+  "partially_delivered",
+  "delivered",
+]
+const DELIVERED_STATUSES = ["delivered"]
 
 const OrderCard = ({ order }: OrderCardProps) => {
   const numberOfLines = useMemo(() => {
@@ -19,65 +35,81 @@ const OrderCard = ({ order }: OrderCardProps) => {
     )
   }, [order])
 
-  const numberOfProducts = useMemo(() => {
-    return order.items?.length ?? 0
-  }, [order])
+  const status = order.fulfillment_status
+  const litSteps = [
+    true,
+    PACKED_STATUSES.includes(status),
+    SHIPPED_STATUSES.includes(status),
+    DELIVERED_STATUSES.includes(status),
+  ]
 
   return (
-    <div className="bg-bg flex flex-col" data-testid="order-card">
-      <div className="uppercase text-large-semi mb-1">
-        #<span data-testid="order-display-id">{order.display_id}</span>
-      </div>
-      <div className="flex items-center divide-x divide-gray-200 text-small-regular text-ui-fg-base">
-        <span className="pr-2" data-testid="order-created-at">
-          {new Date(order.created_at).toDateString()}
-        </span>
-        <span className="px-2" data-testid="order-amount">
+    <div className="card" style={{ marginBottom: 16 }} data-testid="order-card">
+      <div className="row-between">
+        <div>
+          <h3>
+            Order #
+            <span data-testid="order-display-id">{order.display_id}</span>
+          </h3>
+          <p className="meta" data-testid="order-created-at">
+            {new Date(order.created_at).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}{" "}
+            · {numberOfLines} {numberOfLines === 1 ? "item" : "items"}
+          </p>
+        </div>
+        <span className="price num" data-testid="order-amount">
           {convertToLocale({
             amount: order.total,
             currency_code: order.currency_code,
           })}
         </span>
-        <span className="pl-2">{`${numberOfLines} ${
-          numberOfLines > 1 ? "items" : "item"
-        }`}</span>
       </div>
-      <div className="grid grid-cols-2 small:grid-cols-4 gap-4 my-4">
-        {order.items?.slice(0, 3).map((i) => {
-          return (
+
+      <div className="row" style={{ marginTop: 18, gap: 0 }}>
+        {TRACK_STEPS.map((step, i) => (
+          <div key={step} style={{ flex: 1, textAlign: "center", position: "relative" }}>
             <div
-              key={i.id}
-              className="flex flex-col gap-y-2"
-              data-testid="order-item"
-            >
-              <Thumbnail thumbnail={i.thumbnail} images={[]} size="full" />
-              <div className="flex items-center text-small-regular text-ui-fg-base">
-                <span
-                  className="text-ui-fg-base font-semibold"
-                  data-testid="item-title"
-                >
-                  {i.title}
-                </span>
-                <span className="ml-2">x</span>
-                <span data-testid="item-quantity">{i.quantity}</span>
-              </div>
-            </div>
-          )
-        })}
-        {numberOfProducts > 4 && (
-          <div className="w-full h-full flex flex-col items-center justify-center">
-            <span className="text-small-regular text-ui-fg-base">
-              + {numberOfLines - 4}
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 999,
+                margin: "0 auto 6px",
+                background: litSteps[i] ? "var(--green-deep)" : "var(--border)",
+              }}
+            />
+            <span className="meta" style={{ fontSize: 11 }}>
+              {step}
             </span>
-            <span className="text-small-regular text-ui-fg-base">more</span>
+            {i < TRACK_STEPS.length - 1 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 5,
+                  left: "56%",
+                  width: "88%",
+                  height: 2,
+                  background: "var(--border)",
+                }}
+              />
+            )}
           </div>
-        )}
+        ))}
       </div>
-      <div className="flex justify-end">
-        <LocalizedClientLink href={`/account/orders/details/${order.id}`}>
-          <Button data-testid="order-details-link" variant="secondary">
-            See details
-          </Button>
+      <p className="field-hint" style={{ marginTop: 14 }}>
+        Tracking updates here as your order moves.
+      </p>
+
+      <div className="row-between" style={{ marginTop: 18 }}>
+        <span />
+        <LocalizedClientLink
+          href={`/account/orders/details/${order.id}`}
+          className="btn btn-secondary btn-sm"
+          data-testid="order-details-link"
+        >
+          View details
         </LocalizedClientLink>
       </div>
     </div>

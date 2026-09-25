@@ -29,5 +29,9 @@ export default async function OrderDetailPage(props: Props) {
     notFound()
   }
 
-  return <OrderDetailsTemplate order={order} />
+  return (
+    <div className="card">
+      <OrderDetailsTemplate order={order} />
+    </div>
+  )
 }

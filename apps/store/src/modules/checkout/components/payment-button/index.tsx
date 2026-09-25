@@ -147,6 +147,7 @@ const StripePaymentButton = ({
         disabled={disabled || notReady}
         onClick={handlePayment}
         size="large"
+        className="btn btn-primary btn-block"
         isLoading={submitting}
         data-testid={dataTestId}
       >
@@ -187,6 +188,7 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
+        className="btn btn-primary btn-block"
         data-testid="submit-order-button"
       >
         Place order
@@ -297,6 +299,7 @@ const RazorpayPaymentButton = ({
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
+        className="btn btn-primary btn-block"
         data-testid={dataTestId}
       >
         Place order

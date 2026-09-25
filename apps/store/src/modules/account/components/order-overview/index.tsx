@@ -1,7 +1,5 @@
 "use client"
 
-import { Button } from "@modules/common/components/ui"
-
 import OrderCard from "../order-card"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
@@ -9,35 +7,33 @@ import { HttpTypes } from "@medusajs/types"
 const OrderOverview = ({ orders }: { orders: HttpTypes.StoreOrder[] }) => {
   if (orders?.length) {
     return (
-      <div className="flex flex-col gap-y-8 w-full">
+      <div data-testid="orders-list">
         {orders.map((o) => (
-          <div
-            key={o.id}
-            className="border-b border-gray-200 pb-6 last:pb-0 last:border-none"
-          >
-            <OrderCard order={o} />
-          </div>
+          <OrderCard key={o.id} order={o} />
         ))}
       </div>
     )
   }
 
   return (
-    <div
-      className="w-full flex flex-col items-center gap-y-4"
-      data-testid="no-orders-container"
-    >
-      <h2 className="text-large-semi">Nothing to see here</h2>
-      <p className="text-base-regular">
-        You don&apos;t have any orders yet, let us change that {":)"}
-      </p>
-      <div className="mt-4">
-        <LocalizedClientLink href="/" passHref>
-          <Button data-testid="continue-shopping-button">
-            Continue shopping
-          </Button>
-        </LocalizedClientLink>
+    <div className="empty-state" data-testid="no-orders-container">
+      <div className="mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M20 7L9 18l-5-5" />
+        </svg>
       </div>
+      <h3>No orders yet</h3>
+      <p className="lead center" style={{ margin: "8px auto 0" }}>
+        Orders you place will appear here with tracking.
+      </p>
+      <LocalizedClientLink
+        href="/store"
+        className="btn btn-primary"
+        style={{ marginTop: 18 }}
+        data-testid="continue-shopping-button"
+      >
+        Shop all products
+      </LocalizedClientLink>
     </div>
   )
 }

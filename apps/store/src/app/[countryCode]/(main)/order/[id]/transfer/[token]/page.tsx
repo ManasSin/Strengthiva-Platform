@@ -1,4 +1,3 @@
-import { Heading, Text } from "@modules/common/components/ui"
 import TransferActions from "@modules/order/components/transfer-actions"
 import TransferImage from "@modules/order/components/transfer-image"
 
@@ -10,29 +9,29 @@ export default async function TransferPage({
   const { id, token } = params
 
   return (
-    <div className="flex flex-col gap-y-4 items-start w-2/5 mx-auto mt-10 mb-20">
-      <TransferImage />
-      <div className="flex flex-col gap-y-6">
-        <Heading level="h1" className="text-xl text-zinc-900">
-          Transfer request for order {id}
-        </Heading>
-        <Text className="text-zinc-600">
-          You&#39;ve received a request to transfer ownership of your order ({id}).
-          If you agree to this request, you can approve the transfer by clicking
-          the button below.
-        </Text>
-        <div className="w-full h-px bg-zinc-200" />
-        <Text className="text-zinc-600">
-          If you accept, the new owner will take over all responsibilities and
-          permissions associated with this order.
-        </Text>
-        <Text className="text-zinc-600">
-          If you do not recognize this request or wish to retain ownership, no
-          further action is required.
-        </Text>
-        <div className="w-full h-px bg-zinc-200" />
-        <TransferActions id={id} token={token} />
+    <section className="section" style={{ maxWidth: 560, marginInline: "auto" }}>
+      <div className="container">
+        <div className="panel stack">
+          <TransferImage />
+          <h3>Transfer request for order {id}</h3>
+          <p className="muted">
+            You&#39;ve received a request to transfer ownership of your order ({id}).
+            If you agree to this request, you can approve the transfer by clicking
+            the button below.
+          </p>
+          <hr className="rule" />
+          <p className="muted">
+            If you accept, the new owner will take over all responsibilities and
+            permissions associated with this order.
+          </p>
+          <p className="muted">
+            If you do not recognize this request or wish to retain ownership, no
+            further action is required.
+          </p>
+          <hr className="rule" />
+          <TransferActions id={id} token={token} />
+        </div>
       </div>
-    </div>
+    </section>
   )
 }

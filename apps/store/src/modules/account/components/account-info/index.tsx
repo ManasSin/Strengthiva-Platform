@@ -1,9 +1,9 @@
 import { Disclosure } from "@headlessui/react"
-import { Badge, Button, clx } from "@modules/common/components/ui"
+import { clx } from "@modules/common/components/ui"
 import { useEffect } from "react"
 
 import useToggleState from "@lib/hooks/use-toggle-state"
-import { useFormStatus } from "react-dom"
+import FormSubmitButton from "../form-submit-button"
 
 type AccountInfoProps = {
   label: string
@@ -28,8 +28,6 @@ const AccountInfo = ({
 }: AccountInfoProps) => {
   const { state, close, toggle } = useToggleState()
 
-  const { pending } = useFormStatus()
-
   const handleToggle = () => {
     clearState()
     setTimeout(() => toggle(), 100)
@@ -42,30 +40,25 @@ const AccountInfo = ({
   }, [isSuccess, close])
 
   return (
-    <div className="text-small-regular" data-testid={dataTestid}>
-      <div className="flex items-end justify-between">
-        <div className="flex flex-col">
-          <span className="uppercase text-ui-fg-base">{label}</span>
-          <div className="flex items-center flex-1 basis-0 justify-end gap-x-4">
-            {typeof currentInfo === "string" ? (
-              <span className="font-semibold" data-testid="current-info">{currentInfo}</span>
-            ) : (
-              currentInfo
-            )}
-          </div>
+    <div data-testid={dataTestid}>
+      <div className="row-between">
+        <div className="field" style={{ gap: 2 }}>
+          <label>{label}</label>
+          {typeof currentInfo === "string" ? (
+            <span data-testid="current-info">{currentInfo}</span>
+          ) : (
+            currentInfo
+          )}
         </div>
-        <div>
-          <Button
-            variant="secondary"
-            className="w-[100px] min-h-[25px] py-1"
-            onClick={handleToggle}
-            type={state ? "reset" : "button"}
-            data-testid="edit-button"
-            data-active={state}
-          >
-            {state ? "Cancel" : "Edit"}
-          </Button>
-        </div>
+        <button
+          type={state ? "reset" : "button"}
+          className="btn btn-ghost btn-sm"
+          onClick={handleToggle}
+          data-testid="edit-button"
+          data-active={state}
+        >
+          {state ? "Cancel" : "Edit"}
+        </button>
       </div>
 
       {/* Success state */}
@@ -81,9 +74,9 @@ const AccountInfo = ({
           )}
           data-testid="success-message"
         >
-          <Badge className="p-2 my-4" color="green">
-            <span>{label} updated succesfully</span>
-          </Badge>
+          <p className="badge badge-stock" style={{ margin: "16px 0" }}>
+            {label} updated succesfully
+          </p>
         </Disclosure.Panel>
       </Disclosure>
 
@@ -100,9 +93,9 @@ const AccountInfo = ({
           )}
           data-testid="error-message"
         >
-          <Badge className="p-2 my-4" color="red">
-            <span>{errorMessage}</span>
-          </Badge>
+          <p className="field-error" style={{ margin: "16px 0" }}>
+            {errorMessage}
+          </p>
         </Disclosure.Panel>
       </Disclosure>
 
@@ -117,17 +110,10 @@ const AccountInfo = ({
             }
           )}
         >
-          <div className="flex flex-col gap-y-2 py-4">
+          <div className="stack" style={{ padding: "16px 0" }}>
             <div>{children}</div>
-            <div className="flex items-center justify-end mt-2">
-              <Button
-                isLoading={pending}
-                className="w-full small:max-w-[140px]"
-                type="submit"
-                data-testid="save-button"
-              >
-                Save changes
-              </Button>
+            <div className="row-between" style={{ justifyContent: "flex-end" }}>
+              <FormSubmitButton data-testid="save-button">Save changes</FormSubmitButton>
             </div>
           </div>
         </Disclosure.Panel>

@@ -27,54 +27,48 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
 
   return (
     <div>
-      <div className="flex flex-col gap-y-2 txt-medium text-muted ">
-        <div className="flex items-center justify-between">
-          <span>Subtotal (excl. shipping and taxes)</span>
-          <span data-testid="cart-subtotal" data-value={item_subtotal || 0}>
-            {convertToLocale({ amount: item_subtotal ?? 0, currency_code })}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Shipping</span>
-          <span data-testid="cart-shipping" data-value={shipping_subtotal || 0}>
-            {convertToLocale({ amount: shipping_subtotal ?? 0, currency_code })}
-          </span>
-        </div>
-        {!!discount_subtotal && (
-          <div className="flex items-center justify-between">
-            <span>Discount</span>
-            <span
-              className="text-primary"
-              data-testid="cart-discount"
-              data-value={discount_subtotal || 0}
-            >
-              -{" "}
-              {convertToLocale({
-                amount: discount_subtotal ?? 0,
-                currency_code,
-              })}
-            </span>
-          </div>
-        )}
-        <div className="flex justify-between">
-          <span className="flex gap-x-1 items-center ">Taxes</span>
-          <span data-testid="cart-taxes" data-value={tax_total || 0}>
-            {convertToLocale({ amount: tax_total ?? 0, currency_code })}
-          </span>
-        </div>
-      </div>
-      <div className="h-px w-full border-b border-gray-200 my-4" />
-      <div className="flex items-center justify-between text-forest mb-2 txt-medium ">
-        <span>Total</span>
-        <span
-          className="txt-xlarge-plus"
-          data-testid="cart-total"
-          data-value={total || 0}
-        >
-          {convertToLocale({ amount: total ?? 0, currency_code })}
+      <div className="row-between" style={{ marginBottom: 8 }}>
+        <span className="muted">Subtotal (excl. shipping and taxes)</span>
+        <span className="num" data-testid="cart-subtotal" data-value={item_subtotal || 0}>
+          {convertToLocale({ amount: item_subtotal ?? 0, currency_code })}
         </span>
       </div>
-      <div className="h-px w-full border-b border-gray-200 mt-4" />
+      <div className="row-between" style={{ marginBottom: 8 }}>
+        <span className="muted">Shipping</span>
+        <span className="num" data-testid="cart-shipping" data-value={shipping_subtotal || 0}>
+          {convertToLocale({ amount: shipping_subtotal ?? 0, currency_code })}
+        </span>
+      </div>
+      {!!discount_subtotal && (
+        <div className="row-between" style={{ marginBottom: 8 }}>
+          <span className="muted">Discount</span>
+          <span
+            className="num"
+            style={{ color: "var(--green-deep)" }}
+            data-testid="cart-discount"
+            data-value={discount_subtotal || 0}
+          >
+            -{" "}
+            {convertToLocale({
+              amount: discount_subtotal ?? 0,
+              currency_code,
+            })}
+          </span>
+        </div>
+      )}
+      <div className="row-between" style={{ marginBottom: 8 }}>
+        <span className="muted">Taxes</span>
+        <span className="num" data-testid="cart-taxes" data-value={tax_total || 0}>
+          {convertToLocale({ amount: tax_total ?? 0, currency_code })}
+        </span>
+      </div>
+      <hr className="rule" style={{ margin: "14px 0" }} />
+      <div className="row-between">
+        <strong>Total</strong>
+        <strong className="num" data-testid="cart-total" data-value={total || 0}>
+          {convertToLocale({ amount: total ?? 0, currency_code })}
+        </strong>
+      </div>
     </div>
   )
 }

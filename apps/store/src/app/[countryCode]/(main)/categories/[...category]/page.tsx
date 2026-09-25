@@ -4,9 +4,8 @@ import { notFound } from "next/navigation"
 import { getCategoryByHandle, listCategories } from "@lib/data/categories"
 import { listRegions } from "@lib/data/regions"
 import { HttpTypes, StoreRegion } from "@medusajs/types"
-import CategoryTemplate from "@modules/categories/templates"
+import StoreTemplate from "@modules/store/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
-import { parseOptionValueIds } from "@lib/util/product-option-filters"
 
 type Props = {
   params: Promise<{ category: string[]; countryCode: string }>
@@ -51,7 +50,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   try {
     const productCategory = await getCategoryByHandle(params.category)
 
-    const title = productCategory.name + " | Strengthiva Store"
+    const title = productCategory.name + " — Strengthiva"
 
     const description = productCategory.description ?? `${title} category.`
 
@@ -70,8 +69,6 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 export default async function CategoryPage(props: Props) {
   const searchParams = await props.searchParams
   const params = await props.params
-  const { sortBy, page } = searchParams
-  const optionValueIds = parseOptionValueIds(searchParams)
 
   const productCategory = await getCategoryByHandle(params.category)
 
@@ -80,12 +77,10 @@ export default async function CategoryPage(props: Props) {
   }
 
   return (
-    <CategoryTemplate
-      category={productCategory}
-      sortBy={sortBy}
-      page={page}
+    <StoreTemplate
+      categoryHandle={productCategory.handle}
+      sortBy={searchParams.sortBy}
       countryCode={params.countryCode}
-      optionValueIds={optionValueIds}
     />
   )
 }

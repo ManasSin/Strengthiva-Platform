@@ -2,6 +2,8 @@ import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
 import { DM_Mono, DM_Sans, Newsreader } from "next/font/google"
 import "styles/globals.css"
+// After globals.css on purpose — see the header of styles/store.css.
+import "styles/store.css"
 
 // Same three brand faces as app.strengthiva.com (docs/redesign/brand-spec.md
 // § Font Stacks) — the two origins have to read as one brand, so this list and
@@ -41,7 +43,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
       className={`${newsreader.variable} ${dmSans.variable} ${dmMono.variable} antialiased`}
     >
       <body>
-        <main className="relative">{props.children}</main>
+        <div className="relative">{props.children}</div>
       </body>
     </html>
   )

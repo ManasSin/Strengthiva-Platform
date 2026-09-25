@@ -1,16 +1,16 @@
 "use client"
 
-import { Plus } from "@medusajs/icons"
-import { Button, Heading } from "@modules/common/components/ui"
 import { useActionState, useEffect, useState } from "react"
+
+import { PlusIcon } from "@modules/common/components/store-icons"
 
 import { addCustomerAddress } from "@lib/data/customer"
 import useToggleState from "@lib/hooks/use-toggle-state"
 import { HttpTypes } from "@medusajs/types"
 import CountrySelect from "@modules/checkout/components/country-select"
-import { SubmitButton } from "@modules/checkout/components/submit-button"
 import Input from "@modules/common/components/input"
 import Modal from "@modules/common/components/modal"
+import FormSubmitButton from "../form-submit-button"
 
 const AddAddress = ({
   region,
@@ -47,17 +47,18 @@ const AddAddress = ({
   return (
     <>
       <button
-        className="border border-ui-border-base rounded-rounded p-5 min-h-[220px] h-full w-full flex flex-col justify-between"
+        type="button"
+        className="btn btn-secondary btn-block"
         onClick={open}
         data-testid="add-address-button"
       >
-        <span className="text-base-semi">New address</span>
-        <Plus />
+        <PlusIcon width={16} height={16} />
+        New address
       </button>
 
       <Modal isOpen={state} close={close} data-testid="add-address-modal">
         <Modal.Title>
-          <Heading className="mb-2">Add address</Heading>
+          <h3 style={{ marginBottom: 8 }}>Add address</h3>
         </Modal.Title>
         <form action={formAction}>
           <Modal.Body>
@@ -134,26 +135,22 @@ const AddAddress = ({
               />
             </div>
             {formState.error && (
-              <div
-                className="text-rose-500 text-small-regular py-2"
-                data-testid="address-error"
-              >
+              <p className="field-error" data-testid="address-error">
                 {formState.error}
-              </div>
+              </p>
             )}
           </Modal.Body>
           <Modal.Footer>
-            <div className="flex gap-3 mt-6">
-              <Button
+            <div className="row" style={{ marginTop: 24 }}>
+              <button
                 type="reset"
-                variant="secondary"
+                className="btn btn-secondary"
                 onClick={close}
-                className="h-10"
                 data-testid="cancel-button"
               >
                 Cancel
-              </Button>
-              <SubmitButton data-testid="save-button">Save</SubmitButton>
+              </button>
+              <FormSubmitButton data-testid="save-button">Save</FormSubmitButton>
             </div>
           </Modal.Footer>
         </form>

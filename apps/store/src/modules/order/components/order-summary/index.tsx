@@ -18,40 +18,36 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
   }
 
   return (
-    <div>
-      <h2 className="text-base-semi">Order Summary</h2>
-      <div className="text-small-regular text-ui-fg-base my-2">
-        <div className="flex items-center justify-between text-base-regular text-ui-fg-base mb-2">
-          <span>Subtotal</span>
-          <span>{getAmount(order.subtotal)}</span>
+    <div style={{ marginTop: 24 }}>
+      <h3 style={{ marginBottom: 12 }}>Order summary</h3>
+      <div className="row-between" style={{ marginBottom: 8 }}>
+        <span className="muted">Subtotal</span>
+        <span className="num">{getAmount(order.subtotal)}</span>
+      </div>
+      {order.discount_total > 0 && (
+        <div className="row-between" style={{ marginBottom: 8 }}>
+          <span className="muted">Discount</span>
+          <span className="num">- {getAmount(order.discount_total)}</span>
         </div>
-        <div className="flex flex-col gap-y-1">
-          {order.discount_total > 0 && (
-            <div className="flex items-center justify-between">
-              <span>Discount</span>
-              <span>- {getAmount(order.discount_total)}</span>
-            </div>
-          )}
-          {order.gift_card_total > 0 && (
-            <div className="flex items-center justify-between">
-              <span>Discount</span>
-              <span>- {getAmount(order.gift_card_total)}</span>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <span>Shipping</span>
-            <span>{getAmount(order.shipping_total)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Taxes</span>
-            <span>{getAmount(order.tax_total)}</span>
-          </div>
+      )}
+      {order.gift_card_total > 0 && (
+        <div className="row-between" style={{ marginBottom: 8 }}>
+          <span className="muted">Discount</span>
+          <span className="num">- {getAmount(order.gift_card_total)}</span>
         </div>
-        <div className="h-px w-full border-b border-gray-200 border-dashed my-4" />
-        <div className="flex items-center justify-between text-base-regular text-ui-fg-base mb-2">
-          <span>Total</span>
-          <span>{getAmount(order.total)}</span>
-        </div>
+      )}
+      <div className="row-between" style={{ marginBottom: 8 }}>
+        <span className="muted">Shipping</span>
+        <span className="num">{getAmount(order.shipping_total)}</span>
+      </div>
+      <div className="row-between" style={{ marginBottom: 8 }}>
+        <span className="muted">Taxes</span>
+        <span className="num">{getAmount(order.tax_total)}</span>
+      </div>
+      <hr className="rule" style={{ margin: "14px 0" }} />
+      <div className="row-between">
+        <strong>Total</strong>
+        <strong className="num">{getAmount(order.total)}</strong>
       </div>
     </div>
   )

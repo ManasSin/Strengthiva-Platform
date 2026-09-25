@@ -5,15 +5,13 @@ import {
   updateCustomerAddress,
 } from "@lib/data/customer"
 import useToggleState from "@lib/hooks/use-toggle-state"
-import { PencilSquare as Edit, Trash } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import CountrySelect from "@modules/checkout/components/country-select"
-import { SubmitButton } from "@modules/checkout/components/submit-button"
 import Input from "@modules/common/components/input"
 import Modal from "@modules/common/components/modal"
-import { Button, Heading, Text, clx } from "@modules/common/components/ui"
 import Spinner from "@modules/common/icons/spinner"
 import React, { useActionState, useEffect, useState } from "react"
+import FormSubmitButton from "../form-submit-button"
 
 type EditAddressProps = {
   region: HttpTypes.StoreRegion
@@ -61,59 +59,48 @@ const EditAddress: React.FC<EditAddressProps> = ({
 
   return (
     <>
-      <div
-        className={clx(
-          "border rounded-rounded p-5 min-h-[220px] h-full w-full flex flex-col justify-between transition-colors",
-          {
-            "border-gray-900": isActive,
-          }
-        )}
-        data-testid="address-container"
-      >
-        <div className="flex flex-col">
-          <Heading
-            className="text-left text-base-semi"
-            data-testid="address-name"
-          >
+      <div className="card" data-testid="address-container" style={isActive ? { borderColor: "var(--forest)" } : undefined}>
+        <div className="stack">
+          <h3 data-testid="address-name">
             {address.first_name} {address.last_name}
-          </Heading>
+          </h3>
           {address.company && (
-            <Text
-              className="txt-compact-small text-ui-fg-base"
-              data-testid="address-company"
-            >
+            <p className="meta" data-testid="address-company">
               {address.company}
-            </Text>
+            </p>
           )}
-          <Text className="flex flex-col text-left text-base-regular mt-2">
+          <p className="muted">
             <span data-testid="address-address">
               {address.address_1}
               {address.address_2 && <span>, {address.address_2}</span>}
             </span>
+            <br />
             <span data-testid="address-postal-city">
               {address.postal_code}, {address.city}
             </span>
+            <br />
             <span data-testid="address-province-country">
               {address.province && `${address.province}, `}
               {address.country_code?.toUpperCase()}
             </span>
-          </Text>
+          </p>
         </div>
-        <div className="flex items-center gap-x-4">
+        <div className="row" style={{ marginTop: 16 }}>
           <button
-            className="text-small-regular text-ui-fg-base flex items-center gap-x-2"
+            type="button"
+            className="btn btn-ghost btn-sm"
             onClick={open}
             data-testid="address-edit-button"
           >
-            <Edit />
             Edit
           </button>
           <button
-            className="text-small-regular text-ui-fg-base flex items-center gap-x-2"
+            type="button"
+            className="btn btn-ghost btn-sm"
             onClick={removeAddress}
             data-testid="address-delete-button"
           >
-            {removing ? <Spinner /> : <Trash />}
+            {removing ? <Spinner /> : null}
             Remove
           </button>
         </div>
@@ -121,7 +108,7 @@ const EditAddress: React.FC<EditAddressProps> = ({
 
       <Modal isOpen={state} close={close} data-testid="edit-address-modal">
         <Modal.Title>
-          <Heading className="mb-2">Edit address</Heading>
+          <h3 style={{ marginBottom: 8 }}>Edit address</h3>
         </Modal.Title>
         <form action={formAction}>
           <input type="hidden" name="addressId" value={address.id} />
@@ -208,24 +195,19 @@ const EditAddress: React.FC<EditAddressProps> = ({
                 data-testid="phone-input"
               />
             </div>
-            {formState.error && (
-              <div className="text-rose-500 text-small-regular py-2">
-                {formState.error}
-              </div>
-            )}
+            {formState.error && <p className="field-error">{formState.error}</p>}
           </Modal.Body>
           <Modal.Footer>
-            <div className="flex gap-3 mt-6">
-              <Button
+            <div className="row" style={{ marginTop: 24 }}>
+              <button
                 type="reset"
-                variant="secondary"
+                className="btn btn-secondary"
                 onClick={close}
-                className="h-10"
                 data-testid="cancel-button"
               >
                 Cancel
-              </Button>
-              <SubmitButton data-testid="save-button">Save</SubmitButton>
+              </button>
+              <FormSubmitButton data-testid="save-button">Save</FormSubmitButton>
             </div>
           </Modal.Footer>
         </form>

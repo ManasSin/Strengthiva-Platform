@@ -1,41 +1,27 @@
 import { Metadata } from "next"
+import { redirect } from "next/navigation"
 
-import { parseOptionValueIds } from "@lib/util/product-option-filters"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import StoreTemplate from "@modules/store/templates"
 
 export const metadata: Metadata = {
-  title: "Store",
-  description: "Explore all of our products.",
-}
-
-type StorePageSearchParams = Record<string, string | string[] | undefined> & {
-  sortBy?: SortOptions
-  page?: string
-  q?: string
-  optionValueIds?: string | string[]
+  title: "Shop All — Strengthiva",
+  description: "Every Strengthiva formulation, filterable by category, type and price.",
 }
 
 type Params = {
-  searchParams: Promise<StorePageSearchParams>
-  params: Promise<{
-    countryCode: string
-  }>
+  searchParams: Promise<{ sortBy?: SortOptions; q?: string }>
+  params: Promise<{ countryCode: string }>
 }
 
 export default async function StorePage(props: Params) {
-  const params = await props.params;
-  const searchParams = await props.searchParams;
-  const { sortBy, page, q } = searchParams
-  const optionValueIds = parseOptionValueIds(searchParams)
+  const { countryCode } = await props.params
+  const { sortBy, q } = await props.searchParams
 
-  return (
-    <StoreTemplate
-      sortBy={sortBy}
-      page={page}
-      query={q}
-      countryCode={params.countryCode}
-      optionValueIds={optionValueIds}
-    />
-  )
+  // Search moved to its own page in the redesign; keep old /store?q= links working.
+  if (q) {
+    redirect(`/${countryCode}/search?q=${encodeURIComponent(q)}`)
+  }
+
+  return <StoreTemplate sortBy={sortBy} countryCode={countryCode} />
 }

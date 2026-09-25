@@ -154,12 +154,15 @@
     scrollbar-width: none; /* Firefox */
   }
 
-  input:focus ~ label,
-  input:not(:placeholder-shown) ~ label {
+  /* Medusa's floating-label inputs. Scoped away from checkboxes/radios, which
+     have no placeholder and so always matched :not(:placeholder-shown) — that
+     shrank every checkbox label to 10px (the redesign's filter facets). */
+  input:not([type="checkbox"]):not([type="radio"]):focus ~ label,
+  input:not([type="checkbox"]):not([type="radio"]):not(:placeholder-shown) ~ label {
     @apply -translate-y-2 text-xsmall-regular;
   }
 
-  input:focus ~ label {
+  input:not([type="checkbox"]):not([type="radio"]):focus ~ label {
     @apply left-0;
   }
 
