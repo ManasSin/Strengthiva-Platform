@@ -38,6 +38,13 @@ const ADMIN_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    // Bound the Postgres connection pool. Without this, db:migrate/startup on the
+    // prod VPS storms medusa-db with connections and hangs (every deploy stalled at
+    // "Running migrations..."). Dropped by accident when this config was rewritten
+    // for the file module; restored to the known-good values the live image used.
+    databaseDriverOptions: {
+      pool: { min: 0, max: 60, acquireTimeoutMillis: 120000, createTimeoutMillis: 120000 },
+    },
     redisUrl: process.env.REDIS_URL,
     http: {
       storeCors: process.env.STORE_CORS!,

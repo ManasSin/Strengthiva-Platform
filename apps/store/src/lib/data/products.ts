@@ -58,6 +58,10 @@ export const listProducts = async ({
 
   const next = {
     ...(await getCacheOptions("products")),
+    // Without a revalidate, cache:"force-cache" caches product data forever, so newly
+    // uploaded product images never appear on the store until a redeploy. 60s matches
+    // the categories fetch.
+    revalidate: 60,
   }
 
   return sdk.client
