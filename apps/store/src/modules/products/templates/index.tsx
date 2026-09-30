@@ -3,6 +3,7 @@ import React, { Suspense } from "react"
 import { CardProduct, productForm } from "@lib/util/store-catalog"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Prose from "@modules/common/components/prose"
 import StoreAccordion from "@modules/common/components/store-accordion"
 import { ProductGrid } from "@modules/products/components/product-card"
 import ProductBuyBox from "@modules/products/components/product-buy-box"
@@ -18,6 +19,12 @@ import { notFound } from "next/navigation"
   docs/product-data-template.md) and otherwise shows the prototype's labelled
   "pending approved copy" text, so a draft product never presents invented
   claims as fact.
+
+  Every section body is rendered as markdown (see components/prose), because
+  Medusa's admin stores the description as plain text and an author writing
+  three paragraphs, a bullet list of benefits or an ingredient table has no
+  other way to give it structure. Copy that uses no markdown syntax is
+  unaffected.
 */
 
 type ProductTemplateProps = {
@@ -134,7 +141,10 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product, images, rela
             Some sections below are shown as labelled placeholders pending Strengthiva&apos;s final
             approved product copy — nothing here is a clinical claim.
           </p>
-          <StoreAccordion items={sections} defaultOpen={0} />
+          <StoreAccordion
+            items={sections.map((s) => ({ title: s.title, body: <Prose>{s.body}</Prose> }))}
+            defaultOpen={0}
+          />
         </div>
       </section>
 

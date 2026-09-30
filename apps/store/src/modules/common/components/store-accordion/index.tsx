@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 /* store.js → toggleAccordion, as a component. */
 export default function StoreAccordion({
@@ -32,15 +32,26 @@ function AccordionItem({
   defaultOpen: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
-  const panelRef = useRef<HTMLDivElement>(null)
-  // Measured height while open, so the max-height transition runs both ways;
-  // before first measurement an open panel uses the stylesheet's 600px cap.
+  const bodyRef = useRef<HTMLDivElement>(null)
+  // The panel animates on max-height, which needs a pixel value, so the body
+  // is measured and kept in sync as its content reflows. Keeping it in sync
+  // matters because a product description is markdown of any length: a fixed
+  // fallback cap would silently clip the section the PDP opens by default.
   const [height, setHeight] = useState<number | null>(null)
 
-  const toggle = () => {
-    setHeight(panelRef.current?.scrollHeight ?? null)
-    setOpen((o) => !o)
-  }
+  useEffect(() => {
+    const body = bodyRef.current
+    if (!body) return
+    const measure = () => setHeight(body.scrollHeight)
+    measure()
+    // Re-measure on reflow — a narrower viewport rewraps the text taller, and
+    // images inside a description settle after they load.
+    const observer = new ResizeObserver(measure)
+    observer.observe(body)
+    return () => observer.disconnect()
+  }, [])
+
+  const toggle = () => setOpen((o) => !o)
 
   return (
     <div className={`accordion-item${open ? " open" : ""}`}>
@@ -50,10 +61,13 @@ function AccordionItem({
       </button>
       <div
         className="accordion-panel"
-        ref={panelRef}
-        style={{ maxHeight: open ? (height != null ? height : 600) : 0 }}
+        // Before the first measurement an open panel is left uncapped, so the
+        // server-rendered markup and first paint show all of the content.
+        style={{ maxHeight: open ? height ?? "none" : 0 }}
       >
-        <div className="accordion-body">{children}</div>
+        <div className="accordion-body" ref={bodyRef}>
+          {children}
+        </div>
       </div>
     </div>
   )
