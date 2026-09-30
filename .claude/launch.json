@@ -6,6 +6,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@strengthiva/app", "dev"],
       "port": 3000
+    },
+    {
+      "name": "store",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@strengthiva/store", "dev"],
+      "port": 3001
     }
   ]
 }
