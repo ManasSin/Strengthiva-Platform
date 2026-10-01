@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type {
   IngredientRow,
@@ -160,11 +160,20 @@ function problemWith(rows: DraftRow[]): string | null {
 export function IngredientEditor({
   product,
   onChange,
+  onDirtyChange,
 }: {
   product: ProductDetail;
   onChange: (product: ProductDetail) => void;
+  /**
+   * Reported upward so the record page can stop a tab link throwing away unsaved
+   * rows. The editor cannot guard that itself — the tabs are not its children.
+   */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  /** The last row removed, kept so a mis-click is undoable without discarding
+      every other edit — which is all Cancel could offer. */
+  const [undo, setUndo] = useState<{ row: DraftRow; at: number } | null>(null);
   const [rows, setRows] = useState<DraftRow[]>(() =>
     product.ingredients.map(toDraft)
   );
@@ -190,11 +199,19 @@ export function IngredientEditor({
     JSON.stringify(rows.map(toInput)) !==
     JSON.stringify(product.ingredients.map(toDraft).map(toInput));
 
+  // Only meaningful while the editor is open; a closed editor is never "dirty".
+  const unsaved = editing && dirty;
+  useEffect(() => {
+    onDirtyChange?.(unsaved);
+    return () => onDirtyChange?.(false);
+  }, [unsaved, onDirtyChange]);
+
   function begin() {
     setRows(product.ingredients.map(toDraft));
     setError(undefined);
     setMessage("");
     setReason("");
+    setUndo(null);
     setEditing(true);
   }
 
@@ -203,6 +220,27 @@ export function IngredientEditor({
     setEditing(false);
     setError(undefined);
     setReason("");
+    setUndo(null);
+  }
+
+  function removeRow(key: string) {
+    setRows((current) => {
+      const at = current.findIndex((item) => item.key === key);
+      if (at < 0) return current;
+      setUndo({ row: current[at], at });
+      return current.filter((item) => item.key !== key);
+    });
+    setMessage("");
+  }
+
+  function undoRemove() {
+    if (!undo) return;
+    setRows((current) => {
+      const next = [...current];
+      next.splice(Math.min(undo.at, next.length), 0, undo.row);
+      return next;
+    });
+    setUndo(null);
   }
 
   function cell(key: string, field: keyof DraftRow, value: string) {
@@ -254,24 +292,11 @@ export function IngredientEditor({
           ? "Order here is the order customers see. Leave a field blank for “not recorded” — blank is never shown as a pass."
           : `${product.ingredients.length} rows. Quality scores and source details are kept per ingredient row.`
       }
+      /* While editing, the panel header carries no actions at all: saving this
+         panel's content belongs at the bottom of this panel, next to the last row
+         someone touched. See the sticky bar below. */
       actions={
-        editing ? (
-          <>
-            <Action disabled={busy} onClick={cancel}>
-              Cancel
-            </Action>
-            {/* Not "Save changes": the page header already has a button with that
-                label for the dates and quality results, and two identical primary
-                buttons on one screen is a way to save the wrong thing. */}
-            <Action
-              tone="primary"
-              disabled={busy || !dirty}
-              onClick={attemptSave}
-            >
-              {busy ? "Saving…" : "Save ingredients"}
-            </Action>
-          </>
-        ) : (
+        editing ? undefined : (
           <>
             <Link
               className="btn btn-secondary"
@@ -379,17 +404,16 @@ export function IngredientEditor({
                         </label>
                       )}
                     </div>
-                    <Action
-                      tone="danger"
-                      disabled={busy}
-                      onClick={() =>
-                        setRows((current) =>
-                          current.filter((item) => item.key !== row.key)
-                        )
-                      }
-                    >
-                      Remove
-                    </Action>
+                    <div className="ingredient-edit-rowmeta">
+                      <span className="tiny muted">Position {index + 1}</span>
+                      <Action
+                        tone="danger"
+                        disabled={busy}
+                        onClick={() => removeRow(row.key)}
+                      >
+                        Remove
+                      </Action>
+                    </div>
                   </header>
 
                   <div className="ingredient-edit-fields">
@@ -491,21 +515,59 @@ export function IngredientEditor({
                     </div>
                   </div>
 
-                  <span className="ingredient-edit-position tiny muted">
-                    Position {index + 1}
-                  </span>
                 </article>
               );
             })}
           </div>
 
+          {/* "Add" appends to the list, so it sits at the end of the list it
+              appends to — not in the header, where it would read as a page-level
+              action like "New batch". */}
           <div className="form-actions">
             <Action
               disabled={busy}
-              onClick={() => setRows((current) => [...current, blankDraft()])}
+              onClick={() => {
+                setRows((current) => [...current, blankDraft()]);
+                setUndo(null);
+              }}
             >
               Add ingredient
             </Action>
+          </div>
+
+          {/* Sticky, because a 27-ingredient record is ~11,000px tall and a save
+              control pinned to the top of the panel is ten screens away from the
+              row being edited. */}
+          <div className="editor-bar">
+            <div className="editor-bar-status">
+              {undo ? (
+                <span role="status">
+                  Removed <strong>{undo.row.name || "a row"}</strong>.{" "}
+                  <button type="button" className="text-btn" onClick={undoRemove}>
+                    Undo
+                  </button>
+                </span>
+              ) : (
+                <span className="tiny muted">
+                  {rows.length} {rows.length === 1 ? "ingredient" : "ingredients"}
+                  {dirty ? " · unsaved changes" : ""}
+                </span>
+              )}
+            </div>
+            <div className="editor-bar-actions">
+              <Action disabled={busy} onClick={cancel}>
+                Cancel
+              </Action>
+              {/* Not "Save changes" — the record's own save uses that label, and
+                  two identical primary buttons is a way to save the wrong thing. */}
+              <Action
+                tone="primary"
+                disabled={busy || !dirty}
+                onClick={attemptSave}
+              >
+                {busy ? "Saving…" : "Save ingredients"}
+              </Action>
+            </div>
           </div>
         </>
       ) : product.ingredients.length ? (

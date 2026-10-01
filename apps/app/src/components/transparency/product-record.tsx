@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type {
   ProductDetail,
   ProductUpdate,
@@ -77,6 +77,7 @@ export function ProductRecordPage({
 }
 function ProductEditor({ initial }: { initial: ProductDetail }) {
   const params = useSearchParams();
+  const router = useRouter();
   const activeTab = params.get("tab") || "overview";
   const tabRail = useActiveRail<HTMLElement>(activeTab);
   const [product, setProduct] = useState(initial);
@@ -88,6 +89,13 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
     "save" | "publish" | "unpublish" | "qr" | null
   >(null);
   const [qrSize, setQrSize] = useState<QrSize>("small");
+  /**
+   * The ingredient editor's unsaved state, reported up because the tabs are not
+   * its children and it cannot guard them itself. `beforeunload` is no help here:
+   * a tab switch is client-side navigation, which never fires it.
+   */
+  const [ingredientsDirty, setIngredientsDirty] = useState(false);
+  const [blockedTab, setBlockedTab] = useState<string | null>(null);
   const identity = useAdminIdentity();
   const dirty =
     JSON.stringify(values) !== JSON.stringify(productValues(product));
@@ -161,12 +169,14 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
         eyebrow="Batch product record"
         title={product.product_name}
         copy={`${product.batch_number} · One product, one batch, one QR code.`}
+        /* Record-level actions only.
+           "Save changes" used to live here as well, which meant the Quality tab
+           had two ways to save the same fields — one here, one at the bottom of
+           its own panel — and the Overview tab had none of its own at all. Saving
+           a panel's content now happens at the bottom of that panel, everywhere. */
         actions={
           <>
             <PublicationStatus value={product.status} />
-            <Action disabled={busy || !dirty} onClick={save}>
-              {busy ? "Saving…" : "Save changes"}
-            </Action>
             <Action
               tone="primary"
               disabled={busy || dirty || product.status === "published"}
@@ -188,8 +198,8 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
       )}
       {dirty && (
         <Notice title="You have unsaved changes" tone="info">
-          Save your dates and quality results before reviewing publication or
-          leaving this record.
+          Save the dates and quality results at the bottom of their section
+          before reviewing publication or leaving this record.
         </Notice>
       )}
       {message && (
@@ -206,6 +216,13 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
             aria-current={activeTab === key ? "page" : undefined}
             key={key}
             href={`${href}?tab=${key}`}
+            // Leaving the ingredients tab mid-edit used to discard every unsaved
+            // row silently. Ask instead of losing the work.
+            onClick={(event) => {
+              if (!ingredientsDirty || key === activeTab) return;
+              event.preventDefault();
+              setBlockedTab(key);
+            }}
           >
             {label}
           </Link>
@@ -250,7 +267,18 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
                       readOnly
                       value={product.batch_number}
                     />
+                    <span className="help">
+                      Permanent — a batch number is never editable.
+                    </span>
                   </label>
+                </div>
+                {/* Overview edits dates but previously had no save of its own;
+                    the only one was in the page header. Same placement as Quality
+                    and Ingredients now. */}
+                <div className="form-actions">
+                  <Action tone="primary" disabled={!dirty || busy} onClick={save}>
+                    {busy ? "Saving…" : "Save record details"}
+                  </Action>
                 </div>
               </Panel>
               <Panel
@@ -322,7 +350,11 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
             </Panel>
           )}
           {activeTab === "ingredients" && (
-            <ProductIngredients product={product} onChange={setProduct} />
+            <ProductIngredients
+              product={product}
+              onChange={setProduct}
+              onDirtyChange={setIngredientsDirty}
+            />
           )}
           {activeTab === "history" && <RecordHistory product={product} />}
           {activeTab === "documents" && (
@@ -496,6 +528,33 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
           batchNumber={product.batch_number}
           onClose={() => setModal(null)}
         />
+      )}
+      {blockedTab && (
+        <Modal
+          title="Leave without saving your ingredients?"
+          onClose={() => setBlockedTab(null)}
+        >
+          <p>
+            The ingredient changes you have made have not been saved. Leaving
+            this section discards them.
+          </p>
+          <div className="modal-actions">
+            <Action onClick={() => setBlockedTab(null)}>
+              Stay and keep editing
+            </Action>
+            <Action
+              tone="danger"
+              onClick={() => {
+                const target = blockedTab;
+                setBlockedTab(null);
+                setIngredientsDirty(false);
+                router.push(`${href}?tab=${target}`, { scroll: false });
+              }}
+            >
+              Discard and leave
+            </Action>
+          </div>
+        </Modal>
       )}
     </>
   );

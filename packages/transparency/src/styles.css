@@ -2384,10 +2384,48 @@
   align-items: center;
   min-height: 42px;
 }
-.transparency .ingredient-edit-position {
-  position: absolute;
-  top: 18px;
-  right: 110px;
+/* Position and Remove sit together in normal flow.
+   Position used to be absolutely placed, which put it on top of the ingredient
+   name as soon as the name wrapped to two lines — which it does at phone width
+   for most of these names. */
+.transparency .ingredient-edit-rowmeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+/* Sticky save bar for the editor. A 27-row record is ~11,000px tall, so a save
+   control at the top of the panel is ten screens from the row being edited. */
+.transparency .editor-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px -20px -20px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line, #e3e1dc);
+  background: var(--surface, #fff);
+  border-radius: 0 0 12px 12px;
+}
+.transparency .editor-bar-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+.transparency .editor-bar-status {
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .transparency .editor-bar-actions {
+    width: 100%;
+  }
+  .transparency .editor-bar-actions .btn {
+    flex: 1;
+  }
 }
 .transparency .ingredient-edit-card .input,
 .transparency .ingredient-edit-card select.input {

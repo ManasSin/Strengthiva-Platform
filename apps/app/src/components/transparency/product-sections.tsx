@@ -34,13 +34,19 @@ import { useResource } from "./use-resource";
 export function ProductIngredients({
   product,
   onChange,
+  onDirtyChange,
 }: {
   product: ProductDetail;
   onChange: (product: ProductDetail) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   return (
     <>
-      <IngredientEditor product={product} onChange={onChange} />
+      <IngredientEditor
+        product={product}
+        onChange={onChange}
+        onDirtyChange={onDirtyChange}
+      />
       <div className="scope-note">
         <Icon name="leaf" />
         <span>
