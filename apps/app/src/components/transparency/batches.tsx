@@ -101,12 +101,19 @@ export function BatchesPage() {
       <PageHead
         eyebrow="Manufacturing records"
         title="Batches"
-        copy="Track each manufacturing order from workbook import to customer publication."
+        copy="Track each manufacturing order from its first draft to customer publication."
         actions={
-          <Link className="btn btn-primary" href="/admin/import">
-            <Icon name="upload" />
-            Import workbook
-          </Link>
+          <>
+            {/* Import is no longer the primary path — it is the fallback, for a
+                restore or an order that arrives as a sheet. */}
+            <Link className="btn btn-secondary" href="/admin/import">
+              <Icon name="upload" />
+              Import workbook
+            </Link>
+            <Link className="btn btn-primary" href="/admin/batches/new">
+              New batch
+            </Link>
+          </>
         }
       />
       <div className="stats">
