@@ -139,6 +139,23 @@ export const transparencyApi = {
       method: "POST",
       body: JSON.stringify({ ingredient_row_ids: rows }),
     }),
+  /**
+   * Remove an uploaded document. Returns 204 with no body, so it cannot go
+   * through `request`, which always parses JSON.
+   */
+  deleteDocument: async (id: string) => {
+    const response = await fetch(`${base}/documents/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new TransparencyError(
+        response.status,
+        errorMessage(body?.detail) || "The document could not be removed."
+      );
+    }
+  },
   ingredients: (signal?: AbortSignal) =>
     listAll<IngredientMaster>("/ingredients", 1000, signal),
   updateIngredient: (

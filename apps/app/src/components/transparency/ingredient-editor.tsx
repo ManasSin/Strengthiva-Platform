@@ -20,11 +20,11 @@ import { Action, ErrorNotice, Modal } from "./controls";
 import { useResource } from "./use-resource";
 
 /**
- * Every cell is held as a STRING while editing.
+ * Every numeric cell is held as a STRING while editing.
  *
- * Parsing on each keystroke fights the person typing: "9." is not a number, and a
- * controlled numeric input that rejects it either eats the keypress or snaps the
- * caret. Strings go in; `toNumber` converts once, on save.
+ * Parsing each keystroke fights the person typing: "9." is not a number, and a
+ * controlled numeric input that rejects it either eats the keypress or moves the
+ * caret. One conversion happens on save.
  */
 type DraftRow = {
   /** Stable across re-renders, including for rows with no server id yet. */
@@ -40,6 +40,25 @@ type DraftRow = {
   qcStatus: string;
   labReportId: string | null;
 };
+
+/** The vocabulary the client's data actually uses. See `mergeOption` for the rest. */
+const UNIT_OPTIONS = ["mg", "ml", "g"];
+const QC_OPTIONS = ["Passed", "Failed", "Verified", "Approved"];
+
+/**
+ * A select must never silently rewrite a value it did not offer.
+ *
+ * The QA columns are free text by design — the sheet's own vocabulary is
+ * inconsistent — so a stored value outside the list is appended to it rather than
+ * dropped. Without this, opening the editor on such a row and pressing save would
+ * quietly change the record to whichever option happened to be first.
+ */
+function mergeOption(options: string[], current: string): string[] {
+  const trimmed = current.trim();
+  if (!trimmed || options.some((o) => o.toLowerCase() === trimmed.toLowerCase()))
+    return options;
+  return [...options, trimmed];
+}
 
 const text = (value: string | null | undefined) => value ?? "";
 const num = (value: number | null) => (value === null ? "" : String(value));
@@ -87,8 +106,8 @@ function toNumber(value: string): number | null {
 function toInput(row: DraftRow): IngredientRowInput {
   return {
     // An existing row is identified by its ingredient, which is how the server
-    // diffs the table. A new row sends the typed name instead, and the server
-    // matches it against the alias table or creates it.
+    // diffs the table. A new row sends the chosen or typed name instead, and the
+    // server matches it against the alias table or creates it.
     ingredient_id: row.ingredientId,
     name: row.ingredientId ? null : row.name.trim(),
     qty_value: toNumber(row.qtyValue),
@@ -101,12 +120,13 @@ function toInput(row: DraftRow): IngredientRowInput {
 }
 
 /**
- * Caught here rather than left to the API so the operator keeps their typed table.
- * A 422 is correct but discards nothing useful — this keeps the row in front of them.
+ * Caught here rather than left to the API so the operator keeps what they typed.
+ * A 422 is correct but throws the whole form away — this keeps the row in front
+ * of them with the problem named.
  */
 function problemWith(rows: DraftRow[]): string | null {
   if (rows.some((row) => !row.ingredientId && !row.name.trim()))
-    return "Every row needs an ingredient name.";
+    return "Every row needs an ingredient.";
 
   const unparsedQty = rows.find(
     (row) => row.qtyValue.trim() && toNumber(row.qtyValue) === null
@@ -154,15 +174,14 @@ export function IngredientEditor({
   const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState("");
 
-  // The ingredient master, for the name suggestions on added rows. A plain
-  // datalist rather than a custom combobox: the browser's own list is keyboard
-  // accessible for free, and typing a name the list does NOT contain is a
-  // supported action here, not a mistake.
   const master = useResource("ingredient-master", (signal) =>
     transparencyApi.ingredients(signal)
   );
-  const suggestions = useMemo(
-    () => (master.data || []).map((item) => item.name).sort(),
+  const ingredientOptions = useMemo(
+    () =>
+      (master.data || [])
+        .map((item) => ({ id: item.id, name: item.name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [master.data]
   );
 
@@ -200,8 +219,6 @@ export function IngredientEditor({
       return;
     }
     setError(undefined);
-    // A live record gets the same confirmation the dates and quality tabs use:
-    // the change reaches the customer page the moment it saves.
     if (live) setConfirming(true);
     else void save();
   }
@@ -220,7 +237,7 @@ export function IngredientEditor({
       setEditing(false);
       setConfirming(false);
       setReason("");
-      setMessage("Ingredient table saved.");
+      setMessage("Ingredient list saved.");
     } catch (error) {
       setError(error as Error);
       setConfirming(false);
@@ -234,7 +251,7 @@ export function IngredientEditor({
       title="Ingredient traceability"
       copy={
         editing
-          ? "Row order sets the order customers see. Blank means “not recorded”, which is never shown as a pass."
+          ? "Order here is the order customers see. Leave a field blank for “not recorded” — blank is never shown as a pass."
           : `${product.ingredients.length} rows. Quality scores and source details are kept per ingredient row.`
       }
       actions={
@@ -243,12 +260,15 @@ export function IngredientEditor({
             <Action disabled={busy} onClick={cancel}>
               Cancel
             </Action>
+            {/* Not "Save changes": the page header already has a button with that
+                label for the dates and quality results, and two identical primary
+                buttons on one screen is a way to save the wrong thing. */}
             <Action
               tone="primary"
               disabled={busy || !dirty}
               onClick={attemptSave}
             >
-              {busy ? "Saving…" : "Save table"}
+              {busy ? "Saving…" : "Save ingredients"}
             </Action>
           </>
         ) : (
@@ -260,7 +280,7 @@ export function IngredientEditor({
               Attach lab reports
             </Link>
             <Action tone="primary" onClick={begin}>
-              Edit table
+              Edit ingredients
             </Action>
           </>
         )
@@ -279,16 +299,223 @@ export function IngredientEditor({
       )}
       {error && <ErrorNotice error={error} />}
 
-      {rows.length || editing ? (
+      {editing ? (
+        /* Editing deliberately leaves the table behind.
+           The read-only table is 940px wide and scrolls sideways, which is fine to
+           read but unusable to fill in: inside this column the Source field was
+           clipped to "test,locati" and QC status sat off the right edge. Cards wrap
+           to the width available, so every field is visible and labelled. */
+        <>
+          <div className="ingredient-edit-list">
+            {rows.map((row, index) => {
+              const units = mergeOption(UNIT_OPTIONS, row.qtyUnit);
+              const statuses = mergeOption(QC_OPTIONS, row.qcStatus);
+              return (
+                <article className="ingredient-edit-card" key={row.key}>
+                  <header className="ingredient-edit-head">
+                    <div className="ingredient-edit-identity">
+                      {row.rowId ? (
+                        <>
+                          <strong>{row.name}</strong>
+                          <span className="sub">
+                            <em>
+                              {row.botanicalName ||
+                                "Botanical name not recorded"}
+                            </em>
+                          </span>
+                        </>
+                      ) : (
+                        <label className="field">
+                          <span>Ingredient</span>
+                          <select
+                            className="input"
+                            value={row.ingredientId || ""}
+                            disabled={busy}
+                            onChange={(event) => {
+                              const id = event.target.value;
+                              const found = ingredientOptions.find(
+                                (option) => option.id === id
+                              );
+                              setRows((current) =>
+                                current.map((item) =>
+                                  item.key === row.key
+                                    ? {
+                                        ...item,
+                                        ingredientId: id || null,
+                                        name: found ? found.name : item.name,
+                                      }
+                                    : item
+                                )
+                              );
+                              setMessage("");
+                            }}
+                          >
+                            <option value="">
+                              {master.loading
+                                ? "Loading ingredients…"
+                                : "Choose an ingredient…"}
+                            </option>
+                            {ingredientOptions.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.name}
+                              </option>
+                            ))}
+                          </select>
+                          {!row.ingredientId && (
+                            <input
+                              className="input"
+                              value={row.name}
+                              disabled={busy}
+                              placeholder="…or type a new ingredient name"
+                              aria-label="New ingredient name"
+                              onChange={(event) =>
+                                cell(row.key, "name", event.target.value)
+                              }
+                            />
+                          )}
+                          <span className="help">
+                            Pick from the library, or type a name to add it.
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                    <Action
+                      tone="danger"
+                      disabled={busy}
+                      onClick={() =>
+                        setRows((current) =>
+                          current.filter((item) => item.key !== row.key)
+                        )
+                      }
+                    >
+                      Remove
+                    </Action>
+                  </header>
+
+                  <div className="ingredient-edit-fields">
+                    <label className="field">
+                      <span>Quantity</span>
+                      <span className="cell-pair">
+                        <input
+                          className="input mono"
+                          inputMode="decimal"
+                          value={row.qtyValue}
+                          disabled={busy}
+                          placeholder="—"
+                          onChange={(event) =>
+                            cell(row.key, "qtyValue", event.target.value)
+                          }
+                        />
+                        <select
+                          className="input cell-unit"
+                          value={row.qtyUnit}
+                          disabled={busy}
+                          aria-label="Unit"
+                          onChange={(event) =>
+                            cell(row.key, "qtyUnit", event.target.value)
+                          }
+                        >
+                          <option value="">—</option>
+                          {units.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {unit}
+                            </option>
+                          ))}
+                        </select>
+                      </span>
+                    </label>
+
+                    <label className="field">
+                      <span>Internal score</span>
+                      <input
+                        className="input mono"
+                        inputMode="decimal"
+                        value={row.qualityScore}
+                        disabled={busy}
+                        placeholder="—"
+                        onChange={(event) =>
+                          cell(row.key, "qualityScore", event.target.value)
+                        }
+                      />
+                      <span className="help">0–100, or blank</span>
+                    </label>
+
+                    <label className="field">
+                      <span>QC status</span>
+                      <select
+                        className="input"
+                        value={row.qcStatus}
+                        disabled={busy}
+                        onChange={(event) =>
+                          cell(row.key, "qcStatus", event.target.value)
+                        }
+                      >
+                        <option value="">Not recorded</option>
+                        {statuses.map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field ingredient-edit-source">
+                      <span>Source</span>
+                      <input
+                        className="input"
+                        value={row.sourceLocation}
+                        disabled={busy}
+                        placeholder="Not recorded"
+                        onChange={(event) =>
+                          cell(row.key, "sourceLocation", event.target.value)
+                        }
+                      />
+                      <span className="help">
+                        Where this material came from, as you want it shown.
+                      </span>
+                    </label>
+
+                    <div className="field">
+                      <span>Lab report</span>
+                      <div className="ingredient-edit-report">
+                        {row.labReportId ? (
+                          <Status tone="good" icon="check">
+                            Attached
+                          </Status>
+                        ) : (
+                          <span className="tiny muted">
+                            None — attach from Lab reports
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className="ingredient-edit-position tiny muted">
+                    Position {index + 1}
+                  </span>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="form-actions">
+            <Action
+              disabled={busy}
+              onClick={() => setRows((current) => [...current, blankDraft()])}
+            >
+              Add ingredient
+            </Action>
+          </div>
+        </>
+      ) : product.ingredients.length ? (
         <div
           className="table-frame"
           role="region"
           aria-label="Ingredient traceability table"
           tabIndex={0}
         >
-          <table
-            className={`table ingredients-table ${editing ? "editing" : ""}`}
-          >
+          <table className="table ingredients-table">
             <thead>
               <tr>
                 <th>Ingredient</th>
@@ -297,136 +524,40 @@ export function IngredientEditor({
                 <th>Source</th>
                 <th>QC status</th>
                 <th>Lab report</th>
-                {editing && <th aria-label="Remove row" />}
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.key}>
+              {product.ingredients.map((row) => (
+                <tr key={row.id}>
                   <td>
-                    {row.rowId ? (
-                      <>
-                        <strong>{row.name}</strong>
-                        <span className="sub">
-                          <em>
-                            {row.botanicalName || "Botanical name not recorded"}
-                          </em>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          className="input"
-                          list="ingredient-names"
-                          value={row.name}
-                          disabled={busy}
-                          placeholder="Ingredient name"
-                          aria-label="Ingredient name"
-                          onChange={(event) =>
-                            cell(row.key, "name", event.target.value)
-                          }
-                        />
-                        <span className="sub">
-                          <em>Matched to the ingredient master, or added to it.</em>
-                        </span>
-                      </>
-                    )}
+                    <strong>{row.name}</strong>
+                    <span className="sub">
+                      <em>
+                        {row.botanical_name || "Botanical name not recorded"}
+                      </em>
+                    </span>
                   </td>
                   <td className="mono">
-                    {editing ? (
-                      <span className="cell-pair">
-                        <input
-                          className="input"
-                          inputMode="decimal"
-                          value={row.qtyValue}
-                          disabled={busy}
-                          placeholder="—"
-                          aria-label={`Quantity for ${row.name || "new row"}`}
-                          onChange={(event) =>
-                            cell(row.key, "qtyValue", event.target.value)
-                          }
-                        />
-                        <input
-                          className="input cell-unit"
-                          list="qty-units"
-                          value={row.qtyUnit}
-                          disabled={busy}
-                          aria-label={`Unit for ${row.name || "new row"}`}
-                          onChange={(event) =>
-                            cell(row.key, "qtyUnit", event.target.value)
-                          }
-                        />
-                      </span>
-                    ) : (
-                      quantity(toNumber(row.qtyValue), row.qtyUnit || null)
-                    )}
+                    {quantity(row.qty_value, row.qty_unit)}
                   </td>
                   <td className="mono">
-                    {editing ? (
-                      <input
-                        className="input"
-                        inputMode="decimal"
-                        value={row.qualityScore}
-                        disabled={busy}
-                        placeholder="—"
-                        aria-label={`Internal score for ${row.name || "new row"}`}
-                        onChange={(event) =>
-                          cell(row.key, "qualityScore", event.target.value)
-                        }
-                      />
-                    ) : row.qualityScore ? (
-                      `${row.qualityScore} / 100`
-                    ) : (
-                      "—"
+                    {row.quality_score === null
+                      ? "—"
+                      : `${row.quality_score} / 100`}
+                  </td>
+                  <td>{row.source_location || "Not recorded"}</td>
+                  <td>
+                    <QualityStatus value={outcome(row.qc_status)} />
+                    {row.qc_status && outcome(row.qc_status) === null && (
+                      <span className="sub">{row.qc_status}</span>
                     )}
                   </td>
                   <td>
-                    {editing ? (
-                      <input
-                        className="input"
-                        value={row.sourceLocation}
-                        disabled={busy}
-                        placeholder="Not recorded"
-                        aria-label={`Source for ${row.name || "new row"}`}
-                        onChange={(event) =>
-                          cell(row.key, "sourceLocation", event.target.value)
-                        }
-                      />
-                    ) : (
-                      row.sourceLocation || "Not recorded"
-                    )}
-                  </td>
-                  <td>
-                    {editing ? (
-                      <span className="cell-pair">
-                        <input
-                          className="input"
-                          list="qa-results"
-                          value={row.qcStatus}
-                          disabled={busy}
-                          placeholder="Not recorded"
-                          aria-label={`QC status for ${row.name || "new row"}`}
-                          onChange={(event) =>
-                            cell(row.key, "qcStatus", event.target.value)
-                          }
-                        />
-                        <QualityStatus value={outcome(row.qcStatus)} />
-                      </span>
-                    ) : (
-                      <>
-                        <QualityStatus value={outcome(row.qcStatus)} />
-                        {row.qcStatus && outcome(row.qcStatus) === null && (
-                          <span className="sub">{row.qcStatus}</span>
-                        )}
-                      </>
-                    )}
-                  </td>
-                  <td>
-                    {row.labReportId ? (
-                      product.status === "published" && !editing ? (
+                    {row.lab_report_id ? (
+                      product.status === "published" ? (
                         <a
                           className="text-btn"
-                          href={publicDocumentUrl(product.id, row.labReportId)}
+                          href={publicDocumentUrl(product.id, row.lab_report_id)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -437,8 +568,6 @@ export function IngredientEditor({
                           Attached
                         </Status>
                       )
-                    ) : editing ? (
-                      <span className="tiny muted">Attach after saving</span>
                     ) : (
                       <Link
                         className="text-btn"
@@ -448,21 +577,6 @@ export function IngredientEditor({
                       </Link>
                     )}
                   </td>
-                  {editing && (
-                    <td>
-                      <Action
-                        tone="danger"
-                        disabled={busy}
-                        onClick={() =>
-                          setRows((current) =>
-                            current.filter((item) => item.key !== row.key)
-                          )
-                        }
-                      >
-                        Remove
-                      </Action>
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>
@@ -470,37 +584,8 @@ export function IngredientEditor({
         </div>
       ) : (
         <EmptyState title="No ingredients recorded">
-          Add them here, or import the batch workbook.
+          Choose “Edit ingredients” to add them, or import the batch workbook.
         </EmptyState>
-      )}
-
-      {editing && (
-        <>
-          <datalist id="ingredient-names">
-            {suggestions.map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
-          <datalist id="qty-units">
-            <option value="mg" />
-            <option value="ml" />
-            <option value="g" />
-          </datalist>
-          <datalist id="qa-results">
-            <option value="Passed" />
-            <option value="Failed" />
-            <option value="Verified" />
-            <option value="Approved" />
-          </datalist>
-          <div className="form-actions">
-            <Action
-              disabled={busy}
-              onClick={() => setRows((current) => [...current, blankDraft()])}
-            >
-              Add ingredient
-            </Action>
-          </div>
-        </>
       )}
 
       {confirming && (
@@ -510,7 +595,7 @@ export function IngredientEditor({
         >
           <p>
             Customers scanning this product’s QR code will see the saved
-            ingredient table immediately.
+            ingredient list immediately.
           </p>
           <label className="field">
             <span>Reason for this change (optional)</span>

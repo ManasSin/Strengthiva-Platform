@@ -2334,13 +2334,63 @@
   min-width: 240px;
   max-width: 380px;
 }
-/* Editing puts an input in most cells and adds a Remove column, so the table needs
-   more room than its read-only width. It stays inside .table-frame's own
-   overflow-x, which is why this column is allowed to grow at all. */
-.transparency .ingredients-table.editing {
-  min-width: 1180px;
+/* Editing does NOT reuse the table.
+   A 940px table that scrolls sideways is fine to read and unusable to fill in —
+   inside this column the Source input was clipped mid-word and QC status sat off
+   the right edge. Each row becomes a card whose fields wrap to the width actually
+   available, so nothing is hidden and every field carries a visible label. */
+.transparency .ingredient-edit-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
-.transparency .ingredients-table .input {
+.transparency .ingredient-edit-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line, #e3e1dc);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  min-width: 0;
+}
+.transparency .ingredient-edit-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.transparency .ingredient-edit-identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* auto-fit + minmax is what makes this responsive without media queries: fields
+   sit side by side when there is room and stack when there is not. */
+.transparency .ingredient-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+/* Source is free text and the longest value on the row, so it gets the full width
+   rather than a sixth of it — the specific thing that was broken. */
+.transparency .ingredient-edit-source {
+  grid-column: 1 / -1;
+}
+.transparency .ingredient-edit-report {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+}
+.transparency .ingredient-edit-position {
+  position: absolute;
+  top: 18px;
+  right: 110px;
+}
+.transparency .ingredient-edit-card .input,
+.transparency .ingredient-edit-card select.input {
   width: 100%;
   min-width: 0;
 }
@@ -2353,7 +2403,26 @@
   min-width: 0;
 }
 .transparency .cell-unit {
-  flex: 0 0 72px;
+  flex: 0 0 84px;
+}
+/* Replace / Remove on a stored document. They sit together under the filename so
+   the destructive one is never adjacent to the slot's own upload control. */
+.transparency .document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.transparency .document-actions .text-btn {
+  cursor: pointer;
+}
+.transparency .text-btn.danger {
+  color: var(--danger, #a3301f);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
 }
 .transparency .document-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
