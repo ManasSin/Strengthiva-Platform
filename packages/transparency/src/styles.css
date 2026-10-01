@@ -638,6 +638,14 @@
 }
 .transparency .section-stack {
   display: grid;
+  /* Explicit single track + min-width:0 so this column can shrink below its
+     content. A grid item otherwise keeps min-width:auto, so the 940px-wide
+     ingredients table pushed this column past its `minmax(0, 1fr)` track and
+     slid under the sticky .record-aside (QR / preview), hiding the Source, QC
+     status and Lab report columns. Constrained, .table-frame's own
+     overflow-x:auto scrolls the table inside the card instead. */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 16px;
 }
 .transparency .split {
