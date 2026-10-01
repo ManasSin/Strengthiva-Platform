@@ -12,120 +12,35 @@ import {
   formatDate,
   outcome,
   QA_FIELDS,
-  quantity,
 } from "@strengthiva/transparency/domain";
 import {
-  EmptyState,
   Icon,
   Loading,
   Notice,
   Panel,
-  QualityStatus,
   Status,
 } from "@strengthiva/transparency/ui";
 import { PublicRecord } from "@strengthiva/transparency/public-record";
 import { publicDocumentUrl, transparencyApi } from "@/lib/transparency-api";
 import { Action, ErrorNotice, Modal } from "./controls";
+import { IngredientEditor } from "./ingredient-editor";
 import { useResource } from "./use-resource";
 
-export function ProductIngredients({ product }: { product: ProductDetail }) {
+/**
+ * The ingredient section. The table itself lives in IngredientEditor, which is
+ * large enough on its own now that rows are editable; this keeps the section's
+ * footer note beside it and the import path unchanged for the record page.
+ */
+export function ProductIngredients({
+  product,
+  onChange,
+}: {
+  product: ProductDetail;
+  onChange: (product: ProductDetail) => void;
+}) {
   return (
-    <Panel
-      title="Ingredient traceability"
-      copy={`${product.ingredients.length} rows in workbook order. Quality scores and source details are preserved per ingredient row.`}
-      actions={
-        <Link
-          className="btn btn-secondary"
-          href={`/admin/reports?batch=${product.batch_id}`}
-        >
-          Attach lab reports
-        </Link>
-      }
-    >
-      {product.ingredients.length ? (
-        <div
-          className="table-frame"
-          role="region"
-          aria-label="Ingredient traceability table"
-          tabIndex={0}
-        >
-          <table className="table ingredients-table">
-            <thead>
-              <tr>
-                <th>Ingredient</th>
-                <th>Quantity</th>
-                <th>Internal score</th>
-                <th>Source</th>
-                <th>QC status</th>
-                <th>Lab report</th>
-              </tr>
-            </thead>
-            <tbody>
-              {product.ingredients.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.name}</strong>
-                    <span className="sub">
-                      <em>
-                        {row.botanical_name || "Botanical name not recorded"}
-                      </em>
-                    </span>
-                  </td>
-                  <td className="mono">
-                    {quantity(row.qty_value, row.qty_unit)}
-                  </td>
-                  <td className="mono">
-                    {row.quality_score === null
-                      ? "—"
-                      : `${row.quality_score} / 100`}
-                  </td>
-                  <td>{row.source_location || "Not recorded"}</td>
-                  <td>
-                    <QualityStatus value={outcome(row.qc_status)} />
-                    {row.qc_status && outcome(row.qc_status) === null && (
-                      <span className="sub">{row.qc_status}</span>
-                    )}
-                  </td>
-                  <td>
-                    {row.lab_report_id ? (
-                      <>
-                        {product.status === "published" ? (
-                          <a
-                            className="text-btn"
-                            href={publicDocumentUrl(
-                              product.id,
-                              row.lab_report_id
-                            )}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            View PDF <Icon name="external" />
-                          </a>
-                        ) : (
-                          <Status tone="good" icon="check">
-                            Attached
-                          </Status>
-                        )}
-                      </>
-                    ) : (
-                      <Link
-                        className="text-btn"
-                        href={`/admin/reports?batch=${product.batch_id}`}
-                      >
-                        Attach report
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <EmptyState title="No ingredients recorded">
-          Review the source workbook before this product is published.
-        </EmptyState>
-      )}
+    <>
+      <IngredientEditor product={product} onChange={onChange} />
       <div className="scope-note">
         <Icon name="leaf" />
         <span>
@@ -136,7 +51,7 @@ export function ProductIngredients({ product }: { product: ProductDetail }) {
           . Scores are internal quality indicators, not regulatory ratings.
         </span>
       </div>
-    </Panel>
+    </>
   );
 }
 export function PublicationChecklist({

@@ -2326,6 +2326,27 @@
   min-width: 240px;
   max-width: 380px;
 }
+/* Editing puts an input in most cells and adds a Remove column, so the table needs
+   more room than its read-only width. It stays inside .table-frame's own
+   overflow-x, which is why this column is allowed to grow at all. */
+.transparency .ingredients-table.editing {
+  min-width: 1180px;
+}
+.transparency .ingredients-table .input {
+  width: 100%;
+  min-width: 0;
+}
+/* A value and its unit read as one field, so they share a line and the unit takes
+   only the width a unit needs. */
+.transparency .cell-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.transparency .cell-unit {
+  flex: 0 0 72px;
+}
 .transparency .document-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }

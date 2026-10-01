@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type {
   ProductDetail,
   ProductUpdate,
+  QrSize,
 } from "@strengthiva/transparency/types";
 import {
   formatDate,
@@ -31,19 +32,21 @@ import {
 } from "./controls";
 import { PublicationStatus } from "./batches";
 import { useAdminIdentity } from "./shell";
-import { QrDownload, QrImage, QrSheet } from "./qr";
+import { QrDownload, QrImage, QrSheet, QrSizeSelect } from "./qr";
 import {
   ProductDocuments,
   ProductIngredients,
   ProductPreview,
   PublicationChecklist,
 } from "./product-sections";
+import { RecordHistory } from "./record-history";
 const tabs = [
   ["overview", "Overview"],
   ["quality", "Quality checks"],
   ["ingredients", "Ingredients"],
   ["documents", "Documents"],
   ["publication", "Publication"],
+  ["history", "History"],
   ["preview", "Customer preview"],
 ];
 export function ProductRecordPage({
@@ -84,6 +87,7 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
   const [modal, setModal] = useState<
     "save" | "publish" | "unpublish" | "qr" | null
   >(null);
+  const [qrSize, setQrSize] = useState<QrSize>("small");
   const identity = useAdminIdentity();
   const dirty =
     JSON.stringify(values) !== JSON.stringify(productValues(product));
@@ -318,8 +322,9 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
             </Panel>
           )}
           {activeTab === "ingredients" && (
-            <ProductIngredients product={product} />
+            <ProductIngredients product={product} onChange={setProduct} />
           )}
+          {activeTab === "history" && <RecordHistory product={product} />}
           {activeTab === "documents" && (
             <ProductDocuments product={product} onChange={setProduct} />
           )}
@@ -351,8 +356,17 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
           <aside className="record-aside">
             <Panel title="QR code" copy="One product · one batch">
               <QrImage id={product.id} name={product.product_name} />
+              <QrSizeSelect
+                value={qrSize}
+                onChange={setQrSize}
+                disabled={busy}
+              />
               <div className="cluster center">
-                <QrDownload id={product.id} name={product.product_name} />
+                <QrDownload
+                  id={product.id}
+                  name={product.product_name}
+                  size={qrSize}
+                />
                 <Action onClick={() => setModal("qr")}>
                   <Icon name="printer" />
                   Print
@@ -360,7 +374,7 @@ function ProductEditor({ initial }: { initial: ProductDetail }) {
               </div>
               <p className="tiny muted qr-caption">
                 {product.status === "draft"
-                  ? "The code will resolve after publication."
+                  ? "Safe to print now — the code resolves to nothing until this record is published."
                   : "This code opens the published record."}
               </p>
             </Panel>
