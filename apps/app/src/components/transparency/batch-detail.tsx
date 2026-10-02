@@ -17,6 +17,7 @@ import { Action, Breadcrumbs, ErrorNotice, Modal } from "./controls";
 import { PublicationStatus } from "./batches";
 import { useAdminIdentity } from "./shell";
 import { QrSheet } from "./qr";
+import { AddRecordDialog } from "./record-authoring";
 export function BatchDetailPage({ id }: { id: string }) {
   const resource = useResource(`batch-${id}`, (signal) =>
     transparencyApi.batch(id, signal)
@@ -24,6 +25,7 @@ export function BatchDetailPage({ id }: { id: string }) {
   const identity = useAdminIdentity();
   const [confirm, setConfirm] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error>();
   const [message, setMessage] = useState("");
@@ -86,6 +88,7 @@ export function BatchDetailPage({ id }: { id: string }) {
               <Icon name="printer" />
               QR print sheet
             </Action>
+            <Action onClick={() => setAdding(true)}>Add product</Action>
             <Action
               tone="primary"
               disabled={!ready.length}
@@ -250,6 +253,9 @@ export function BatchDetailPage({ id }: { id: string }) {
           batchNumber={batch.batch_number}
           onClose={() => setSheet(false)}
         />
+      )}
+      {adding && (
+        <AddRecordDialog batch={batch} onClose={() => setAdding(false)} />
       )}
     </>
   );

@@ -22,6 +22,16 @@ export function Action({
     </Button>
   );
 }
+/**
+ * Errors render inside role="alert" so assistive technology announces them.
+ *
+ * Without it the success path was announced (it carries role="status") and the
+ * failure path was silent — exactly backwards, since "Every row needs an
+ * ingredient" is the message someone most needs to hear. WCAG 2.2 §4.1.3.
+ *
+ * "alert" rather than "status" because these interrupt a task in progress — a
+ * failed save, a rejected value — and should not wait for a pause in speech.
+ */
 export function ErrorNotice({
   error,
   retry,
@@ -30,24 +40,26 @@ export function ErrorNotice({
   retry?: () => void;
 }) {
   return (
-    <Notice title="Something needs attention" tone="bad">
-      <p>{error.message}</p>
-      {error instanceof TransparencyError && error.blockers.length > 0 && (
-        <ul>
-          {error.blockers.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      )}
-      {error instanceof TransparencyError &&
-      [401, 403].includes(error.status) ? (
-        <Link className="text-btn" href="/login?redirect=/admin/batches">
-          Sign in
-        </Link>
-      ) : (
-        retry && <Action onClick={retry}>Try again</Action>
-      )}
-    </Notice>
+    <div role="alert">
+      <Notice title="Something needs attention" tone="bad">
+        <p>{error.message}</p>
+        {error instanceof TransparencyError && error.blockers.length > 0 && (
+          <ul>
+            {error.blockers.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+        {error instanceof TransparencyError &&
+        [401, 403].includes(error.status) ? (
+          <Link className="text-btn" href="/login?redirect=/admin/batches">
+            Sign in
+          </Link>
+        ) : (
+          retry && <Action onClick={retry}>Try again</Action>
+        )}
+      </Notice>
+    </div>
   );
 }
 

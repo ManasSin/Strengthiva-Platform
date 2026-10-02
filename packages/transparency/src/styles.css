@@ -2334,6 +2334,134 @@
   min-width: 240px;
   max-width: 380px;
 }
+/* Editing does NOT reuse the table.
+   A 940px table that scrolls sideways is fine to read and unusable to fill in —
+   inside this column the Source input was clipped mid-word and QC status sat off
+   the right edge. Each row becomes a card whose fields wrap to the width actually
+   available, so nothing is hidden and every field carries a visible label. */
+.transparency .ingredient-edit-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.transparency .ingredient-edit-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line, #e3e1dc);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  min-width: 0;
+}
+.transparency .ingredient-edit-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.transparency .ingredient-edit-identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* auto-fit + minmax is what makes this responsive without media queries: fields
+   sit side by side when there is room and stack when there is not. */
+.transparency .ingredient-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+/* Source is free text and the longest value on the row, so it gets the full width
+   rather than a sixth of it — the specific thing that was broken. */
+.transparency .ingredient-edit-source {
+  grid-column: 1 / -1;
+}
+.transparency .ingredient-edit-report {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+}
+/* Position and Remove sit together in normal flow.
+   Position used to be absolutely placed, which put it on top of the ingredient
+   name as soon as the name wrapped to two lines — which it does at phone width
+   for most of these names. */
+.transparency .ingredient-edit-rowmeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+/* Sticky save bar for the editor. A 27-row record is ~11,000px tall, so a save
+   control at the top of the panel is ten screens from the row being edited. */
+.transparency .editor-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px -20px -20px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line, #e3e1dc);
+  background: var(--surface, #fff);
+  border-radius: 0 0 12px 12px;
+}
+.transparency .editor-bar-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+.transparency .editor-bar-status {
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .transparency .editor-bar-actions {
+    width: 100%;
+  }
+  .transparency .editor-bar-actions .btn {
+    flex: 1;
+  }
+}
+.transparency .ingredient-edit-card .input,
+.transparency .ingredient-edit-card select.input {
+  width: 100%;
+  min-width: 0;
+}
+/* A value and its unit read as one field, so they share a line and the unit takes
+   only the width a unit needs. */
+.transparency .cell-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.transparency .cell-unit {
+  flex: 0 0 84px;
+}
+/* Replace / Remove on a stored document. They sit together under the filename so
+   the destructive one is never adjacent to the slot's own upload control. */
+.transparency .document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.transparency .document-actions .text-btn {
+  cursor: pointer;
+}
+.transparency .text-btn.danger {
+  color: var(--danger, #a3301f);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
 .transparency .document-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }

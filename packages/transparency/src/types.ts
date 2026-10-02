@@ -131,6 +131,76 @@ export type IngredientMaster = {
   used_in_products: number;
   alias_count: number;
 };
+/**
+ * A hit in the product typeahead. `recipe_item_count` is why the typeahead is
+ * worth having — it says how many ingredient rows picking this product will
+ * prefill, before the operator commits to it.
+ */
+export type ProductSearchResult = {
+  id: string;
+  name: string;
+  slug: string;
+  recipe_item_count: number;
+  batch_count: number;
+};
+/** A row of a product's standing recipe, independent of any batch. */
+export type RecipeItem = {
+  ingredient_id: string;
+  name: string;
+  botanical_name: string | null;
+  qty_value: number | null;
+  qty_unit: string | null;
+  position: number;
+};
+/**
+ * One ingredient row being written. Either `ingredient_id` (chosen from the
+ * master) or `name` (typed, then matched or created server-side) — not both.
+ *
+ * Deliberately not IngredientRow: that carries a row `id` and a resolved
+ * botanical name, neither of which the client ever sends.
+ */
+export type IngredientRowInput = {
+  ingredient_id?: string | null;
+  name?: string | null;
+  qty_value: number | null;
+  qty_unit: string | null;
+  quality_score: number | null;
+  source_location: string | null;
+  qc_status: string | null;
+  lab_report_id?: string | null;
+};
+/**
+ * One recorded change. `entity_label` is the ingredient name for a row edit,
+ * captured when the change was made so the entry still reads after the row it
+ * refers to has been deleted.
+ */
+export type AuditEntry = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  entity_label: string | null;
+  field: string;
+  old_value: string | null;
+  new_value: string | null;
+  reason: string | null;
+  changed_by: string | null;
+  changed_at: string;
+};
+export type QrSize = "small" | "medium" | "large";
+export type NewBatchInput = {
+  batch_number: string;
+  po_number: string | null;
+  order_date: string | null;
+};
+export type NewRecordInput = {
+  batch_id: string;
+  product_id?: string | null;
+  product_name?: string | null;
+  seed_from_recipe: boolean;
+  received_date?: string | null;
+  manufacturing_date?: string | null;
+  expiry_date?: string | null;
+};
 export type CompanySettings = {
   manufacturer_name: string | null;
   manufacturer_address: string | null;

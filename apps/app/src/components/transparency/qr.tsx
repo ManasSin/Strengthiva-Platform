@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import type { QrSize } from "@strengthiva/transparency/types";
 import { Icon, Loading, Notice } from "@strengthiva/transparency/ui";
 import { downloadBlob, transparencyApi } from "@/lib/transparency-api";
 import { Action, ErrorNotice, Modal } from "./controls";
@@ -40,7 +41,57 @@ export function QrImage({ id, name }: { id: string; name: string }) {
     <Loading label="Generating QR code" />
   );
 }
-export function QrDownload({ id, name }: { id: string; name: string }) {
+/**
+ * Print sizes as the operator sees them. The pixel figures are what the server
+ * renders at 10/16/24 pixels per module for the 45-module verify code, and they
+ * are shown because "small" on its own tells a label printer nothing.
+ */
+export const QR_SIZES: [QrSize, string][] = [
+  ["small", "Small · 450px"],
+  ["medium", "Medium · 720px"],
+  ["large", "Large · 1080px"],
+];
+
+export function QrSizeSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: QrSize;
+  onChange: (size: QrSize) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="field">
+      <span>Print size</span>
+      <select
+        className="input"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as QrSize)}
+      >
+        {QR_SIZES.map(([size, label]) => (
+          <option key={size} value={size}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <span className="help">
+        Sized by QR module, so the code stays sharp at the size you print.
+      </span>
+    </label>
+  );
+}
+
+export function QrDownload({
+  id,
+  name,
+  size,
+}: {
+  id: string;
+  name: string;
+  size?: QrSize;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error>();
   return (
@@ -52,8 +103,10 @@ export function QrDownload({ id, name }: { id: string; name: string }) {
           setError(undefined);
           try {
             downloadBlob(
-              await transparencyApi.qr(id),
-              `${name.replace(/[^a-z0-9-]/gi, "-")}-qr.png`
+              await transparencyApi.qr(id, size),
+              `${name.replace(/[^a-z0-9-]/gi, "-")}-qr${
+                size && size !== "small" ? `-${size}` : ""
+              }.png`
             );
           } catch (error) {
             setError(error as Error);
