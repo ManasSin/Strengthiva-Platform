@@ -98,8 +98,12 @@ export type ResolvedProduct = {
   complement?: string;
   status?: string;
   resolution:
-    | { status: "resolved"; medusa_product_id: string; medusa_product_handle?: string | null; medusa_variant_id: string; sku: string; price: number | null; currency_code: string | null }
-    | { status: "out_of_stock" }
+    | { status: "resolved"; medusa_product_id: string; medusa_product_handle?: string | null; medusa_variant_id: string; sku: string; price: number | null; currency_code: string | null; thumbnail?: string | null }
+    // Carried for out_of_stock too, because those products are still shown on
+    // the report. Absent from "unmapped" by design: that product has no Medusa
+    // record, so there is no pack shot to point at. (resolve_products() now
+    // sends this on ResolvedItem as well; typed here only, where it is used.)
+    | { status: "out_of_stock"; thumbnail?: string | null }
     | { status: "unmapped" };
 };
 
