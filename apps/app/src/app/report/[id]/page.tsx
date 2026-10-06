@@ -677,6 +677,10 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
   const productPath = resolved?.medusa_product_handle
     ? `/products/${resolved.medusa_product_handle}`
     : "/store";
+  // Present for resolved AND out-of-stock products; "unmapped" has no Medusa
+  // record, so it has no pack shot and falls through to the drawn bottle.
+  const thumbnail =
+    product.resolution.status === "unmapped" ? null : (product.resolution.thumbnail ?? null);
 
   return (
     // `flex flex-col` with the footer pushed by `mt-auto`: the price/CTA row now
@@ -686,8 +690,36 @@ function ProductCard({ product }: { product: ResolvedProduct }) {
     // `pr-24` guess on the title, which clipped any product name long enough to
     // reach it.
     <article className="flex flex-col overflow-hidden rounded-md border border-border bg-background transition-[box-shadow,transform] duration-200 hover:shadow-soft motion-safe:hover:-translate-y-0.5">
-      <div className="grid h-28 place-items-center bg-gradient-to-b from-sage-soft/70 to-surface-2">
-        <BottleGlyph />
+      {/* The real pack shot when Medusa has one, otherwise the drawn bottle.
+          These are up to 1500px square, so the rendered size must come from this
+          box and never from the file: `h-28` fixes the height and `size-full` the
+          width. Measured at 1024px wide — a 1500px pack shot renders 310x112 in a
+          312px track with zero page overflow.
+          `inset-0`/absolute is belt-and-braces, NOT load-bearing on its own: with
+          the image in flow the columns measure the same 312px, because a
+          percentage width contributes nothing to track sizing. (It IS the fix for
+          the self-photo higher up this file — that one is a flex item with
+          `shrink-0`, where the intrinsic width really does become the base size.)
+          Keeping it out of flow means this box stays the single source of the
+          rendered size even if the width class is ever changed.
+          `object-contain`, not cover — letterboxing a labelled pack beats cropping
+          the label off it. `alt=""` because the name is in the <h3> directly below:
+          announcing it twice is noise, and the glyph this replaces is aria-hidden
+          for the same reason. */}
+      <div className="relative grid h-28 place-items-center bg-gradient-to-b from-sage-soft/70 to-surface-2">
+        {thumbnail ? (
+          /* eslint-disable-next-line @next/next/no-img-element -- remote Medusa
+             URL, as with the self-photo; next/image would need the store host in
+             remotePatterns for no gain. */
+          <img
+            src={thumbnail}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 size-full object-contain p-2.5"
+          />
+        ) : (
+          <BottleGlyph />
+        )}
       </div>
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-2 flex items-start justify-between gap-3">
@@ -766,7 +798,7 @@ function StatusBadge({ resolution }: { resolution: ResolvedProduct["resolution"]
   );
 }
 
-/** The line-drawn bottle that stands in for product photography. */
+/** The line-drawn bottle, shown when Medusa has no pack shot for the product. */
 function BottleGlyph() {
   return (
     <span aria-hidden className="relative block h-[4.375rem] w-11">
